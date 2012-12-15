@@ -30,7 +30,7 @@ class Level (object):
         self.nonsolid = self.changers + self.barriers + self.switches + [self.goal]
         self.player = entity.Player(self, data['player'])
         self.enemies = [entity.Enemy(self, pos) for pos in data.get('enemies', [])]
-        self.moving = [self.player] + self.enemies
+        self.moving = self.enemies + [self.player]
         self.solid = [entity.SolidRect(r) for r in data.get('solid', [])]
         self.dirty = True
         self._restart = False

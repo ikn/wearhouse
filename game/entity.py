@@ -83,7 +83,7 @@ class MovingEntity (Entity):
         self._extra_collide_es = []
 
     def collide (self, e, axis, dirn):
-        if e.__class__ in SOLID_ES:
+        if e.__class__ in SOLID_ES and not (isinstance(e, Enemy) and e.dead):
             if axis == 1 and dirn == 1:
                 self.on_ground = True
             return True
@@ -186,11 +186,11 @@ class Player (MovingEntity):
 
     def collide (self, e, axis, dirn):
         MovingEntity.collide(self, e, axis, dirn)
-        if e.__class__ in SOLID_ES:
+        if e.__class__ in SOLID_ES and not (isinstance(e, Enemy) and e.dead):
             return True
-        if isinstance(e, Barrier) and e.on and not self.villain:
+        elif isinstance(e, Barrier) and e.on and not self.villain:
             self.die()
-        if isinstance(e, Goal):
+        elif isinstance(e, Goal):
             self.level.win()
 
 
@@ -198,19 +198,26 @@ class Enemy (MovingEntity):
     def __init__ (self, level, pos):
         MovingEntity.__init__(self, level, pos)
         self.colour = (50, 50, 50)
+        self._extra_collide_es = self.level.barriers
         self._seeking = False
         self._los_time = 0
         self._initial_rect = self.rect.copy()
         self._blocked = False
+        self.dead = False
 
     def collide (self, e, axis, dirn):
         MovingEntity.collide(self, e, axis, dirn)
         if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
             e.die()
-        elif e.__class__ in SOLID_ES:
+        elif e.__class__ in SOLID_ES and not (isinstance(e, Enemy) and e.dead):
             if axis == 0:
                 self._blocked = True
             return True
+        elif isinstance(e, Barrier) and e.on:
+            self.die()
+
+    def die (self):
+        self.dead = True
 
     def dist (self, rect):
         pos = self.rect.center
@@ -229,6 +236,8 @@ class Enemy (MovingEntity):
         self._blocked = False
         self._los_time -= 1
         MovingEntity.update(self)
+        if self.dead:
+            return
         player = self.level.player
         if player.villain:
             self._seeking = False

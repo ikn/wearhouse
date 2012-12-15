@@ -24,12 +24,19 @@ class Level (object):
         self.moving = [self.player] + self.enemies
         self.rects = [entity.SolidRect(r) for r in data.get('solid', [])]
         self.static = self.rects
+        self.dirty = True
+        self._restart = False
+
+    def restart (self):
+        self._restart = True
 
     def _move (self, k, t, m, dirn, held = True):
         self.player.move(dirn, held)
 
     def update (self):
-        for e in [self.player] + self.enemies:
+        if self._restart:
+            self.init()
+        for e in self.moving:
             e.update()
 
     def draw (self, screen):
@@ -40,9 +47,9 @@ class Level (object):
                 e.draw(screen)
         else:
             for e in self.moving:
-                r = e.dirty_rect()
-                rects.append(r)
-                screen.fill((255, 255, 255), r)
+                for r in e.dirty_rect():
+                    rects.append(r)
+                    screen.fill((255, 255, 255), r)
         for e in self.moving:
             e.draw(screen)
         if self.dirty:

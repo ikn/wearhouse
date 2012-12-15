@@ -107,9 +107,12 @@ class Conf (object):
     PLAYER_SIZE = (18, 37)
     GRAVITY = .8
     AIR_RESISTANCE = (.9, .9)
-    FRICTION = (.8, .9)
-    MOVE_SPEED = 1
-    MOVE_SPEED_AIR = .5
+    FRICTION = (.75, .9)
+    MOVE_SPEED = 1.5
+    MOVE_SPEED_AIR = .4
+    JUMP_INITIAL = 5
+    JUMP_CONTINUE = 3
+    JUMP_TIME = 5
 
     # levels
     # y positions are the tile beneath the object (what it's standing on)

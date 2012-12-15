@@ -16,9 +16,12 @@ class SolidRect (object):
 class Entity (object):
     def __init__ (self, pos, size):
         pos = scale_up(pos)
+        size = conf.SIZES[self.__class__.__name__.lower()]
         ts = conf.TILE_SIZE
         # move to centre of bottom edge of lower tile
-        pos[0] += (ts - (size[0] % ts)) / 2
+        overlap = size[0] % ts
+        if overlap != 0:
+            pos[0] += (ts - overlap) / 2
         pos[1] -= size[1]
         x, y = pos
         ix, iy = ir(x), ir(y)
@@ -27,6 +30,10 @@ class Entity (object):
 
     def draw (self, screen):
         screen.fill(self.colour, self.rect)
+
+
+class Change (Entity):
+    colour = (50, 50, 200)
 
 
 class MovingEntity (Entity):
@@ -115,9 +122,10 @@ class MovingEntity (Entity):
 
 class Enemy (MovingEntity):
     def __init__ (self, level, pos):
-        MovingEntity.__init__(self, level, pos, conf.ENEMY_SIZE)
+        MovingEntity.__init__(self, level, pos)
         self.colour = (50, 50, 50)
-        self.seeking = False
+        self._seeking = False
+        self._los_time = 0
         self._initial_rect = self.rect.copy()
         self._blocked = False
 
@@ -135,7 +143,7 @@ class Enemy (MovingEntity):
         other_pos = rect.center
         dx = other_pos[0] - pos[0]
         dy = (other_pos[1] - pos[1])
-        return ((dx, dy), (dx * dx + dy * dy) ** .5)
+        return ((pos, other_pos), (dx, dy), (dx * dx + dy * dy) ** .5)
 
     def _move_towards (self, dp):
         if dp[0] != 0:
@@ -145,28 +153,65 @@ class Enemy (MovingEntity):
 
     def update (self):
         self._blocked = False
+        self._los_time -= 1
         MovingEntity.update(self)
         player = self.level.player
         if not player.villain:
-            # TODO: instead of distance, start seeking if can see player, stop
-            #       if couldn't for SEEK_STOP_TIME
-            dp, dist = self.dist(player.rect)
-            if self.seeking:
-                if dist > conf.STOP_SEEK:
-                    self.seeking = False
-            elif dist <= conf.START_SEEK:
-                self.seeking = True
-            if self.seeking:
+            ((lx0, ly0), (lx1, ly1)), dp, dist = self.dist(player.rect)
+            # check if can see player
+            if lx0 > lx1:
+                lx0, lx1 = lx1, lx0
+            if ly0 > ly1:
+                ly0, ly1 = ly1, ly0
+            vert = dp[0] == 0
+            if vert:
+                c = lx0
+            else:
+                m = float(ly1 - ly0) / (lx1 - lx0)
+                c = ly0 - m * lx0
+            los = True
+            for r in self.level.rects:
+                x0, y0, w, h = r.rect
+                x1, y1 = x0 + w, y0 + h
+                if vert:
+                    if x0 < c < x1 and ly0 < y0 < ly1:
+                        los = False
+                        break
+                else:
+                    if x0 < (y0 - c) / m < x1 and ly0 < y0 < ly1:
+                        los = False
+                        break
+                    if x0 < (y1 - c) / m < x1 and ly0 < y1 < ly1:
+                        los = False
+                        break
+                    if y0 < m * x0 + c < y1 and lx0 < x0 < lx1:
+                        los = False
+                        break
+                    if y0 < m * x1 + c < y1 and lx0 < x1 < lx1:
+                        los = False
+                        break
+            max_dist = conf.STOP_SEEK if self._seeking else conf.START_SEEK
+            if dist > max_dist:
+                los = False
+            if los:
+                self._los_time = conf.SEEK_TIME
+            # determine whether to chase the player
+            if self._seeking:
+                if self._los_time <= 0:
+                    self._seeking = False
+            elif dist <= conf.START_SEEK and los:
+                self._seeking = True
+            if self._seeking:
                 self._move_towards(dp)
-        if not self.seeking:
-            dp, dist = self.dist(self._initial_rect)
+        if not self._seeking:
+            (pos0, pos1), dp, dist = self.dist(self._initial_rect)
             if dist > conf.STOP_RETURN:
                 self._move_towards(dp)
 
 
 class Player (MovingEntity):
     def __init__ (self, level, pos):
-        MovingEntity.__init__(self, level, pos, conf.PLAYER_SIZE)
+        MovingEntity.__init__(self, level, pos)
         self.colour = (200, 50, 50)
         self.villain = False
 

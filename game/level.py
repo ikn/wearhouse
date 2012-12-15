@@ -20,10 +20,11 @@ class Level (object):
     def init (self):
         data = conf.LEVELS[self.ident]
         self.player = entity.Player(self, data['pos'])
-        self.enemies = [entity.Enemy(self, pos) for pos in data['enemies']]
+        self.enemies = [entity.Enemy(self, pos) for pos in data.get('enemies', [])]
         self.moving = [self.player] + self.enemies
         self.rects = [entity.SolidRect(r) for r in data.get('solid', [])]
         self.static = self.rects
+        self.change = [entity.Change(pos) for pos in data.get('change', [])]
         self.dirty = True
         self._restart = False
 

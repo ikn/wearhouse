@@ -104,13 +104,12 @@ class Conf (object):
     # gameplay
     TILE_SIZE = 20
     LEVEL_SIZE = (48, 27)
-    PLAYER_SIZE = (18, 37)
-    ENEMY_SIZE = (18, 18)
+    SIZES = {'player': (18, 37), 'enemy': (18, 18), 'change': (20, 40)}
     # movement
     GRAVITY = .8
     AIR_RESISTANCE = (.9, .9)
     FRICTION = (.75, .9)
-    MOVE_SPEED = {'player': 1.5, 'enemy': .8}
+    MOVE_SPEED = {'player': 1.5, 'enemy': .7}
     MOVE_SPEED_AIR = {'player': .4, 'enemy': .2}
     JUMP_INITIAL = {'player': 8, 'enemy': 6}
     JUMP_CONTINUE = {'player': 3, 'enemy': 3}
@@ -118,6 +117,7 @@ class Conf (object):
     # AI
     START_SEEK = 200
     STOP_SEEK = 300
+    SEEK_TIME = 90
     STOP_RETURN = 5
 
     # levels
@@ -125,7 +125,7 @@ class Conf (object):
     LEVELS = [{
         'pos': (10, 15),
         'enemies': [(35, 15)],
-        'change': [(13, 15)],
+        'change': [(7, 15)],
         'cameras': [],
         'solid': [(0, 15, 48, 12), (14, 14, 5, 1), (15, 13, 3, 2)]
     }]

@@ -203,7 +203,7 @@ class Enemy (MovingEntity):
 
     def collide (self, e, axis, dirn):
         MovingEntity.collide(self, e, axis, dirn)
-        if isinstance(e, Player) and axis == 0 and not e.villain:
+        if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
             e.die()
         elif e.__class__ in SOLID_ES:
             if axis == 0:

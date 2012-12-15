@@ -736,10 +736,14 @@ if __name__ == '__main__':
         Stats(fn).strip_dirs().sort_stats('cumulative').print_stats(20)
         os.unlink(fn)
     else:
+        if len(argv) >= 2:
+            level = int(argv[1])
+        else:
+            level = 0
         # run normally
         restarting = True
         while restarting:
             restarting = False
-            Game(Level).run()
+            Game(Level, level).run()
 
 pg.quit()

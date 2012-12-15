@@ -105,14 +105,15 @@ class Conf (object):
     TILE_SIZE = 20
     LEVEL_SIZE = (48, 27)
     PLAYER_SIZE = (18, 37)
+    ENEMY_SIZE = (18, 18)
     GRAVITY = .8
     AIR_RESISTANCE = (.9, .9)
     FRICTION = (.75, .9)
     MOVE_SPEED = 1.5
     MOVE_SPEED_AIR = .4
-    JUMP_INITIAL = 5
+    JUMP_INITIAL = 8
     JUMP_CONTINUE = 3
-    JUMP_TIME = 5
+    JUMP_TIME = 4
 
     # levels
     # y positions are the tile beneath the object (what it's standing on)

@@ -44,7 +44,7 @@ class Entity (object):
         pos[1] -= size[1]
         x, y = pos
         ix, iy = ir(x), ir(y)
-        self.overflow = (x - ix, y - iy)
+        self.overflow = [x - ix, y - iy]
         self.rect = pg.Rect((ix, iy), size)
 
     def draw (self, screen):
@@ -98,7 +98,7 @@ class MovingEntity (Entity):
         r = self.rect
         p = [r[0] + o[0] + dp[0], r[1] + o[1] + dp[1]]
         dest = [ir(p[0]), ir(p[1])]
-        self.overflow = (p[0] - dest[0], p[1] - dest[1])
+        self.overflow = o = [p[0] - dest[0], p[1] - dest[1]]
         for axis in (0, 1):
             dx = dest[axis] - r[axis]
             if dx == 0:
@@ -112,6 +112,8 @@ class MovingEntity (Entity):
                     col_es.append(self.level.rect)
                 if any(collide(e, axis, dirn) for e in col_es):
                     r[axis] -= dirn
+                    o[axis] = 0
+                    self.vel[axis] = 0
                     break
 
     def run (self, dirn):
@@ -220,7 +222,7 @@ class Enemy (MovingEntity):
     def _move_towards (self, dp):
         if dp[0] != 0:
             self.run(dp[0] > 0)
-        if self._blocked:
+        if self._blocked or self.jumping:
             self.jump(self.jumping)
 
     def update (self):

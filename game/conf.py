@@ -112,28 +112,23 @@ class Conf (object):
     AIR_RESISTANCE = (.9, .9)
     FRICTION = (.75, .9)
     MOVE_SPEED = {'player': 1.5, 'enemy': .7}
-    MOVE_SPEED_AIR = {'player': .4, 'enemy': .2}
-    JUMP_INITIAL = {'player': 8, 'enemy': 6}
-    JUMP_CONTINUE = {'player': 3, 'enemy': 3}
+    MOVE_SPEED_AIR = {'player': .4, 'enemy': .1}
+    JUMP_INITIAL = {'player': 4, 'enemy': 4}
+    JUMP_CONTINUE = {'player': 2, 'enemy': 2}
     JUMP_TIME = {'player': 4, 'enemy': 4}
     # AI
     START_SEEK = 200
     STOP_SEEK = 300
     SEEK_TIME = 90
-    STOP_RETURN = 10
+    STOP_RETURN = 7
 
     # levels
     # y positions are the tile beneath the object (what it's standing on)
     LEVELS = [{
-        'player': (15, 15),
-        'enemies': [(30, 15)],
-        'goal': (32, 15),
-        'solid': [(0, 15, 48, 13)]
-    }, {
-        'player': (23, 16),
-        'enemies': [(10, 16), (40, 14)],
-        'goal': (19, 13),
-        'solid': [(0, 16, 48, 12), (18, 13, 4, 1), (30, 14, 18, 2)]
+        'player': (17, 14),
+        'enemies': [(35, 15)],
+        'goal': (10, 12),
+        'solid': [(0, 15, 48, 13), (0, 14, 23, 1), (0, 12, 15, 2)]
     }, {
         'player': (23, 8),
         'enemies': [(23, 11), (23, 13), (23, 15), (23, 17)],
@@ -150,8 +145,8 @@ class Conf (object):
         'goal': (43, 16),
         'solid': [(0, 16, 13, 11), (13, 19, 23, 8), (36, 16, 12, 11),
                   (16, 16, 16, 1), (13, 18, 2, 1), (13, 17, 1, 1),
-                  (33, 18, 3, 1), (34, 17, 2, 1), (0, 0, 33, 14),
-                  (33, 0, 15, 13)]
+                  (33, 18, 3, 1), (34, 17, 2, 1), (0, 0, 48, 13),
+                  (17, 13, 16, 1)]
     }, {
         'player': (17, 10),
         'enemies': [(18, 7)],

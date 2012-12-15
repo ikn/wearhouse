@@ -4,17 +4,36 @@ from conf import conf
 from util import ir, scale_up
 
 
-class SolidRect (object):
+class Rect (object):
     def __init__ (self, rect):
         self.rect = pg.Rect(scale_up(rect))
-        self.colour = (0, 0, 0)
 
     def draw (self, screen):
         screen.fill(self.colour, self.rect)
 
 
+class SolidRect (Rect):
+    colour = (0, 0, 0)
+
+
+class Barrier (Rect):
+    def __init__ (self, rect):
+        Rect.__init__(self, rect)
+        self.colour = (255, 150, 100)
+        self.on = True
+        self.dirty = False
+
+    def toggle (self):
+        self.on = not self.on
+        self.dirty = True
+
+    def draw (self, screen):
+        if self.on:
+            Rect.draw(self, screen)
+
+
 class Entity (object):
-    def __init__ (self, pos, size):
+    def __init__ (self, pos):
         pos = scale_up(pos)
         size = conf.SIZES[self.__class__.__name__.lower()]
         ts = conf.TILE_SIZE
@@ -32,14 +51,28 @@ class Entity (object):
         screen.fill(self.colour, self.rect)
 
 
-class Change (Entity):
+class Changer (Entity):
     colour = (50, 50, 200)
 
 
+class Switch (Entity):
+    def __init__ (self, pos, barrier):
+        Entity.__init__(self, pos)
+        self.colour = (50, 150, 50)
+        self.barrier = barrier
+
+    def toggle (self):
+        self.barrier.toggle()
+
+
+class Goal (Entity):
+    colour = (200, 200, 50)
+
+
 class MovingEntity (Entity):
-    def __init__ (self, level, pos, size):
+    def __init__ (self, level, pos):
         self.level = level
-        Entity.__init__(self, pos, size)
+        Entity.__init__(self, pos)
         # some initial values
         self.vel = [0, 0]
         self.on_ground = False
@@ -47,6 +80,7 @@ class MovingEntity (Entity):
         self.jumping = False
         self._jump_time = 0
         self._jumped = False
+        self._extra_collide_es = []
 
     def collide (self, e, axis, dirn):
         if e.__class__ in SOLID_ES:
@@ -57,7 +91,8 @@ class MovingEntity (Entity):
     def move_by (self, dp):
         # move and handle collisions
         collide = self.collide
-        es = self.level.moving + self.level.static
+        in_bounds = self.level.rect.contains
+        es = self.level.moving + self.level.solid + self._extra_collide_es
         es.remove(self)
         o = self.overflow
         r = self.rect
@@ -73,6 +108,8 @@ class MovingEntity (Entity):
                 r[axis] += dirn
                 dx -= dirn
                 col_es = [e for e in es if r.colliderect(e.rect)]
+                if not in_bounds(r):
+                    col_es.append(self.level.rect)
                 if any(collide(e, axis, dirn) for e in col_es):
                     r[axis] -= dirn
                     break
@@ -120,6 +157,41 @@ class MovingEntity (Entity):
         self.move_by(v)
 
 
+class Player (MovingEntity):
+    def __init__ (self, level, pos):
+        MovingEntity.__init__(self, level, pos)
+        self.colour = (200, 50, 50)
+        self.villain = False
+        self._extra_collide_es = self.level.barriers + [self.level.goal]
+
+    def move (self, dirn, held):
+        if dirn in (0, 2):
+            if held:
+                self.run(dirn / 2)
+        elif dirn == 1:
+            self.jump(held)
+        else: # dirn == 3
+            r = self.rect
+            if any(r.colliderect(c.rect) for c in self.level.changers):
+                self.villain = not self.villain
+                self.colour = (100, 20, 20) if self.villain else (200, 50, 50)
+            for s in self.level.switches:
+                if r.colliderect(s.rect):
+                    s.toggle()
+
+    def die (self):
+        self.level.restart()
+
+    def collide (self, e, axis, dirn):
+        MovingEntity.collide(self, e, axis, dirn)
+        if e.__class__ in SOLID_ES:
+            return True
+        if isinstance(e, Barrier) and e.on and not self.villain:
+            self.die()
+        if isinstance(e, Goal):
+            self.level.win()
+
+
 class Enemy (MovingEntity):
     def __init__ (self, level, pos):
         MovingEntity.__init__(self, level, pos)
@@ -131,7 +203,7 @@ class Enemy (MovingEntity):
 
     def collide (self, e, axis, dirn):
         MovingEntity.collide(self, e, axis, dirn)
-        if isinstance(e, Player) and axis == 0:
+        if isinstance(e, Player) and axis == 0 and not e.villain:
             e.die()
         elif e.__class__ in SOLID_ES:
             if axis == 0:
@@ -156,7 +228,9 @@ class Enemy (MovingEntity):
         self._los_time -= 1
         MovingEntity.update(self)
         player = self.level.player
-        if not player.villain:
+        if player.villain:
+            self._seeking = False
+        else:
             ((lx0, ly0), (lx1, ly1)), dp, dist = self.dist(player.rect)
             # check if can see player
             if lx0 > lx1:
@@ -170,7 +244,7 @@ class Enemy (MovingEntity):
                 m = float(ly1 - ly0) / (lx1 - lx0)
                 c = ly0 - m * lx0
             los = True
-            for r in self.level.rects:
+            for r in self.level.solid:
                 x0, y0, w, h = r.rect
                 x1, y1 = x0 + w, y0 + h
                 if vert:
@@ -178,12 +252,13 @@ class Enemy (MovingEntity):
                         los = False
                         break
                 else:
-                    if x0 < (y0 - c) / m < x1 and ly0 < y0 < ly1:
-                        los = False
-                        break
-                    if x0 < (y1 - c) / m < x1 and ly0 < y1 < ly1:
-                        los = False
-                        break
+                    if m != 0:
+                        if x0 < (y0 - c) / m < x1 and ly0 < y0 < ly1:
+                            los = False
+                            break
+                        if x0 < (y1 - c) / m < x1 and ly0 < y1 < ly1:
+                            los = False
+                            break
                     if y0 < m * x0 + c < y1 and lx0 < x0 < lx1:
                         los = False
                         break
@@ -209,26 +284,4 @@ class Enemy (MovingEntity):
                 self._move_towards(dp)
 
 
-class Player (MovingEntity):
-    def __init__ (self, level, pos):
-        MovingEntity.__init__(self, level, pos)
-        self.colour = (200, 50, 50)
-        self.villain = False
-
-    def move (self, dirn, held):
-        if dirn in (0, 2):
-            if held:
-                self.run(dirn / 2)
-        elif dirn == 1:
-            self.jump(held)
-
-    def die (self):
-        self.level.restart()
-
-    def collide (self, e, axis, dirn):
-        MovingEntity.collide(self, e, axis, dirn)
-        if e.__class__ in SOLID_ES:
-            return True
-
-
-SOLID_ES = (Player, Enemy, SolidRect)
+SOLID_ES = (Player, Enemy, SolidRect, pg.Rect)

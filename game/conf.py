@@ -76,6 +76,7 @@ class Conf (object):
     KEYS_UP = (pg.K_UP, pg.K_w, pg.K_z, pg.K_COMMA)
     KEYS_DOWN = (pg.K_DOWN, pg.K_s, pg.K_o)
     KEYS_DIRN = (KEYS_LEFT, KEYS_UP, KEYS_RIGHT, KEYS_DOWN)
+    KEYS_RESET = (pg.K_r,)
 
     # audio
     MUSIC_AUTOPLAY = False # just pauses music
@@ -104,7 +105,8 @@ class Conf (object):
     # gameplay
     TILE_SIZE = 20
     LEVEL_SIZE = (48, 27)
-    SIZES = {'player': (18, 37), 'enemy': (18, 18), 'change': (20, 40)}
+    SIZES = {'player': (18, 37), 'enemy': (18, 18), 'changer': (20, 40),
+             'switch': (15, 15), 'goal': (20, 40)}
     # movement
     GRAVITY = .8
     AIR_RESISTANCE = (.9, .9)
@@ -123,11 +125,14 @@ class Conf (object):
     # levels
     # y positions are the tile beneath the object (what it's standing on)
     LEVELS = [{
-        'pos': (10, 15),
+        'player': (10, 15),
         'enemies': [(35, 15)],
-        'change': [(7, 15)],
-        'cameras': [],
-        'solid': [(0, 15, 48, 12), (14, 14, 5, 1), (15, 13, 3, 2)]
+        'changers': [(7, 15)],
+        'barriers': [(20, 13, 1, 2)],
+        'switches': [((30, 15), 0)],
+        'goal': (40, 15),
+        'solid': [(0, 15, 14, 12), (15, 15, 33, 12), (14, 18, 1, 10),
+                  (0, 0, 48, 13)]
     }]
 
 

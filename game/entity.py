@@ -346,7 +346,7 @@ class Player (MovingEntity):
 
 class Enemy (MovingEntity):
     imgs = ('', 'right')
-    anims = dd(10)
+    anims = dd(5)
     img_rect = pg.Rect(0, 0, 16, 18)
 
     def __init__ (self, level, pos):

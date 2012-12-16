@@ -56,13 +56,26 @@ class Changer (Entity):
 
 
 class Switch (Entity):
-    def __init__ (self, pos, barrier):
+    def __init__ (self, level, pos, barrier):
         Entity.__init__(self, pos)
+        self.level = level
         self.colour = (50, 150, 50)
         self.barrier = barrier
+        self._switching = False
+
+    def _end_toggle (self):
+        self.barrier.toggle()
+        self._switching = False
 
     def toggle (self):
-        self.barrier.toggle()
+        g = self.level.game
+        g.play_snd('lever')
+        if self._switching:
+            g.scheduler.rm_timeout(self._switching_id)
+            self._switching = False
+        else:
+            self._switching_id = g.scheduler.add_timeout(self._end_toggle, seconds = conf.SWITCH_TIME)
+            self._switching = True
 
 
 class Goal (Entity):
@@ -175,6 +188,8 @@ class Player (MovingEntity):
         self.dead = False
 
     def move (self, dirn, held):
+        if self.dead:
+            return
         if dirn in (0, 2):
             if held:
                 self.run(dirn / 2)
@@ -202,7 +217,7 @@ class Player (MovingEntity):
             return True
         elif isinstance(e, Barrier) and e.on and not self.villain:
             self.die()
-        elif isinstance(e, Goal):
+        elif isinstance(e, Goal) and not self.dead:
             self.level.win()
 
 

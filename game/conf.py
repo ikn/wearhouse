@@ -83,7 +83,7 @@ class Conf (object):
     MUSIC_VOLUME = dd(.5) # per-backend
     SOUND_VOLUME = .5
     EVENT_ENDMUSIC = pg.USEREVENT
-    SOUND_VOLUMES = dd(1, jump = 1, step = .2, door = .5)
+    SOUND_VOLUMES = dd(1, jump = 1, step = .2, door = .5, lever = .5)
     # generate SOUNDS = {ID: num_sounds}
     SOUNDS = {}
     ss = glob(join_path(SOUND_DIR, '*.ogg'))
@@ -98,6 +98,7 @@ class Conf (object):
                     n = SOUNDS.get(ident, 0)
                     SOUNDS[ident] = n + 1
     STEP_SOUND_TIME = {'player': 15, 'enemy': 20}
+    MAX_SOUNDS = dd(None, change = 1, lever = 1)
 
     # text rendering
     # per-backend, each a {key: value} dict to update fonthandler.Fonts with
@@ -123,6 +124,10 @@ class Conf (object):
     SEEK_TIME = 90
     STOP_RETURN = 5
     # timing/cutscenes
+    SWITCH_TIME = 1
+    RESTART_TIME = 1
+    RESTART_FADE = (False, ((255, 255, 255), 1), ((255, 255, 255), 1.5),
+                    (False, 2))
 
     # levels
     # y positions are the tile beneath the object (what it's standing on)

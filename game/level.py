@@ -15,7 +15,7 @@ class Level (object):
             (conf.KEYS_UP, [(self._move, (1,))], eh.MODE_HELD),
             (conf.KEYS_RIGHT, [(self._move, (2,))], eh.MODE_HELD),
             (conf.KEYS_DOWN, [(self._move, (3,))], eh.MODE_ONDOWN),
-            (conf.KEYS_RESET, self.restart, eh.MODE_ONDOWN)
+            (conf.KEYS_RESET, self._real_restart, eh.MODE_ONDOWN)
         ])
         self.ident = ident
         self.rect = pg.Rect((0, 0), [conf.TILE_SIZE * x for x in conf.LEVEL_SIZE])
@@ -25,7 +25,7 @@ class Level (object):
         data = conf.LEVELS[self.ident]
         self.changers = [entity.Changer(pos) for pos in data.get('changers', [])]
         self.barriers = bs = [entity.Barrier(r) for r in data.get('barriers', [])]
-        self.switches = [entity.Switch(pos, bs[b]) for pos, b in data.get('switches', [])]
+        self.switches = [entity.Switch(self, pos, bs[b]) for pos, b in data.get('switches', [])]
         self.goal = entity.Goal(data['goal'])
         self.nonsolid = self.changers + self.barriers + self.switches + [self.goal]
         self.player = entity.Player(self, data['player'])
@@ -36,8 +36,12 @@ class Level (object):
         self._restart = False
         self._win = False
 
-    def restart (self, *args):
+    def _real_restart (self, *args):
         self._restart = True
+
+    def restart (self):
+        self.game.scheduler.add_timeout(self._real_restart, seconds = conf.RESTART_TIME)
+        self.game.linear_fade(*conf.RESTART_FADE)
 
     def win (self):
         self._win = True

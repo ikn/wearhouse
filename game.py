@@ -116,6 +116,7 @@ screen: the main Pygame surface.
         self.play_music()
         if not conf.MUSIC_AUTOPLAY:
             pg.mixer.music.pause()
+        self.sounds = {}
 
     def _init_backend (self):
         """Set some default attributes for a new backend."""
@@ -368,17 +369,29 @@ base_ID: the ID of the sound to play (we look for base_ID + i for a number i,
 volume: float to scale volume by.
 
 """
+        if base_ID == 'lever':
+            print 'play'
         ID = randrange(conf.SOUNDS[base_ID])
-        print ID
         # load sound
         snd = conf.SOUND_DIR + base_ID + str(ID) + '.ogg'
         snd = pg.mixer.Sound(snd)
+        mx = conf.MAX_SOUNDS[base_ID]
         if snd.get_length() < 10 ** -3:
+            print 'bad', base_ID, ID
             # no way this is valid
             return
+        # stop oldest sound, if necessary
+        if mx is not None:
+            playing = self.sounds.setdefault(base_ID, [])
+            if len(playing) >= mx:
+                playing.pop(0).stop()
+            playing.append(snd)
+        # play
         volume *= conf.SOUND_VOLUME * conf.SOUND_VOLUMES[base_ID]
         snd.set_volume(volume)
         snd.play()
+        if base_ID == 'lever':
+            print 'play', ID
 
     def find_music (self):
         """Store a list of music files."""

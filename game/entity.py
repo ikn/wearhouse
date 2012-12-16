@@ -206,6 +206,8 @@ class Enemy (MovingEntity):
         self.dead = False
 
     def collide (self, e, axis, dirn):
+        if self.dead:
+            return isinstance(e, SolidRect)
         MovingEntity.collide(self, e, axis, dirn)
         if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
             e.die()

@@ -112,9 +112,9 @@ class Conf (object):
     AIR_RESISTANCE = (.9, .9)
     FRICTION = (.75, .9)
     MOVE_SPEED = {'player': 1.5, 'enemy': .7}
-    MOVE_SPEED_AIR = {'player': .4, 'enemy': .1}
-    JUMP_INITIAL = {'player': 4, 'enemy': 4}
-    JUMP_CONTINUE = {'player': 2, 'enemy': 2}
+    MOVE_SPEED_AIR = {'player': .5, 'enemy': .1}
+    JUMP_INITIAL = {'player': 4.4, 'enemy': 4}
+    JUMP_CONTINUE = {'player': 2.2, 'enemy': 2}
     JUMP_TIME = {'player': 4, 'enemy': 4}
     # AI
     START_SEEK = 200
@@ -177,14 +177,15 @@ class Conf (object):
         'solid': [(0, 15, 19, 12), (20, 15, 28, 12), (19, 18, 1, 10),
                   (0, 0, 48, 13), (0, 13, 8, 2), (40, 13, 8, 2)]
     }, {
-        'player': (15, 15),
-        'enemies': [(30, 15)],
-        'changers': [(11, 15)],
-        'barriers': [(22, 13, 1, 2)],
-        'switches': [((25, 15), 0)],
-        'goal': (36, 15),
-        'solid': [(0, 15, 19, 12), (20, 15, 28, 12), (19, 18, 1, 10),
-                  (0, 0, 48, 13), (0, 13, 8, 2), (40, 13, 8, 2)]
+        'player': (27, 10),
+        'enemies': [(16, 10), (31, 16), (30, 19)],
+        'changers': [(16, 19)],
+        'barriers': [(29, 8, 1, 2), (25, 11, 1, 5), (18, 11, 1, 5),
+                     (21, 17, 1, 2)],
+        'switches': [((27, 15), 1), ((21, 12), 2), ((19, 19), 3)],
+        'goal': (31, 19),
+        'solid': [(0, 0, 15, 27), (33, 0, 15, 27), (15, 10, 16, 1),
+                  (17, 16, 16, 1), (15, 19, 18, 8)]
     }]
 
 

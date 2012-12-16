@@ -12,22 +12,17 @@ class Rect (object):
             self.tile_size = conf.TILE_SIZE
         ts = self.tile_size
         self.rect = pg.Rect(scale_up(rect, ts))
-        # load image
-        try:
-            imgs = {}
-            for i, weighting in enumerate(self.img_freqs):
-                imgs[level.game.img('{0}{1}.png'.format(self.ident, i))] = weighting
-        except Exception, e:
-            print e
-            self.img_map = None
-        else:
-            w, h = self.rect.size
-            self.img_map = img_map = []
-            for x in xrange(w / ts):
-                col = []
-                img_map.append(col)
-                for y in xrange(h / ts):
-                    col.append(weighted_rand(imgs))
+        # load images and generate tilemap
+        imgs = {}
+        for i, weighting in enumerate(self.img_freqs):
+            imgs[level.game.img('{0}{1}.png'.format(self.ident, i))] = weighting
+        w, h = self.rect.size
+        self.img_map = img_map = []
+        for x in xrange(w / ts):
+            col = []
+            img_map.append(col)
+            for y in xrange(h / ts):
+                col.append(weighted_rand(imgs))
 
     def draw (self, screen):
         if self.img_map is None:
@@ -49,10 +44,46 @@ class SolidRect (Rect):
     img_freqs = BG.img_freqs
 
 
-class Barrier (Rect):
+class Entity (object):
+    def __init__ (self, level, pos, size = None, img = None):
+        self.ident = self.__class__.__name__.lower()
+        self.level = level
+        pos = scale_up(pos)
+        if size is None:
+            size = conf.SIZES[self.ident]
+            ts = conf.TILE_SIZE
+            # move to centre of bottom edge of lower tile
+            overlap = size[0] % ts
+            if overlap != 0:
+                pos[0] += (ts - overlap) / 2
+            pos[1] -= size[1]
+        # load image
+        if img is None:
+            try:
+                img = level.game.img(self.ident + '.png')
+            except Exception, e:
+                print e
+                img = None
+        self.img = img
+        if img is not None:
+            self.offset = conf.IMG_OFFSETS[self.ident]
+        # set rect
+        self.rect = pg.Rect(pos, size)
+        self.dirty = False
+
+    def draw (self, screen):
+        if self.img is None:
+            screen.fill(self.colour, self.rect)
+        else:
+            screen.blit(self.img, self.rect.move(self.offset))
+
+
+class Barrier (Entity):
     def __init__ (self, level, rect):
-        Rect.__init__(self, level, rect)
-        self.colour = (255, 150, 100)
+        size = scale_up(rect[2:])
+        img = pg.Surface(size).convert_alpha()
+        img.fill((255, 100, 100, 150))
+        Entity.__init__(self, level, rect[:2], size, img)
         self.on = True
         self.dirty = False
 
@@ -62,39 +93,7 @@ class Barrier (Rect):
 
     def draw (self, screen):
         if self.on:
-            Rect.draw(self, screen)
-
-
-class Entity (object):
-    def __init__ (self, level, pos):
-        self.ident = self.__class__.__name__.lower()
-        self.level = level
-        pos = scale_up(pos)
-        size = conf.SIZES[self.ident]
-        ts = conf.TILE_SIZE
-        # move to centre of bottom edge of lower tile
-        overlap = size[0] % ts
-        if overlap != 0:
-            pos[0] += (ts - overlap) / 2
-        pos[1] -= size[1]
-        # load image
-        try:
-            self.img = level.game.img(self.ident + '.png')
-        except Exception, e:
-            print e
-            self.img = None
-        else:
-            self.offset = conf.IMG_OFFSETS[self.ident]
-        # set rect
-        self.rect = pg.Rect(pos, size)
-        self.overflow = [0, 0]
-        self.dirty = False
-
-    def draw (self, screen):
-        if self.img is None:
-            screen.fill(self.colour, self.rect)
-        else:
-            screen.blit(self.img, self.rect.move(self.offset))
+            Entity.draw(self, screen)
 
 
 class Changer (Entity):
@@ -105,28 +104,18 @@ class Switch (Entity):
     def __init__ (self, level, pos, barrier):
         Entity.__init__(self, level, pos)
         self.barrier = barrier
-        self._switching = False
         self.colour = (255, 255, 255)
         self.on = True
         self.img_on = self.img
         self.img_off = self.level.game.img(self.ident + '-off.png')
 
-    def _end_toggle (self):
-        self.barrier.toggle()
-        self._switching = False
-        self.on = not self.on
-        self.img = self.img_on if self.on else self.img_off
-        self.dirty = True
-
     def toggle (self):
         g = self.level.game
         g.play_snd('lever')
-        if self._switching:
-            g.scheduler.rm_timeout(self._switching_id)
-            self._switching = False
-        else:
-            self._switching_id = g.scheduler.add_timeout(self._end_toggle, seconds = conf.SWITCH_TIME)
-            self._switching = True
+        self.barrier.toggle()
+        self.on = not self.on
+        self.img = self.img_on if self.on else self.img_off
+        self.dirty = True
 
 
 class Goal (Entity):
@@ -139,6 +128,7 @@ class MovingEntity (Entity):
         Entity.__init__(self, level, pos)
         # some initial values
         self.vel = [0, 0]
+        self.overflow = [0, 0]
         self.on_ground = False
         self._to_move = [False, False]
         self.jumping = False

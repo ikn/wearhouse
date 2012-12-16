@@ -113,7 +113,7 @@ class Conf (object):
     TILE_SIZE = 20
     LEVEL_SIZE = (48, 27)
     SIZES = {'player': (18, 37), 'enemy': (18, 18), 'changer': (20, 40),
-             'switch': (21, 18), 'goal': (20, 40)}
+             'switch': (20, 20), 'goal': (20, 40)}
     # movement
     GRAVITY = .8
     AIR_RESISTANCE = (.9, .9)
@@ -129,7 +129,6 @@ class Conf (object):
     SEEK_TIME = 90
     STOP_RETURN = 5
     # timing/cutscenes
-    SWITCH_TIME = 1
     START_FADE = ((0, 0, 0), (False, 1))
     RESTART_TIME = 1
     RESTART_FADE = (False, ((255, 255, 255), 1), ((255, 255, 255), 1.5),
@@ -194,7 +193,6 @@ class Conf (object):
     }, {
         'player': (27, 10),
         'enemies': [(16, 10), (31, 16), (30, 19)],
-        'changers': [],
         'barriers': [(29, 8, 1, 2), (25, 14, 1, 2), (18, 11, 1, 5),
                      (21, 17, 1, 2)],
         'switches': [((27, 15), 1), ((21, 12), 2), ((19, 19), 3)],

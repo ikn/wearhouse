@@ -369,6 +369,7 @@ volume: float to scale volume by.
 
 """
         ID = randrange(conf.SOUNDS[base_ID])
+        print ID
         # load sound
         snd = conf.SOUND_DIR + base_ID + str(ID) + '.ogg'
         snd = pg.mixer.Sound(snd)

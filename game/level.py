@@ -41,6 +41,7 @@ class Level (object):
 
     def win (self):
         self._win = True
+        self.game.play_snd('door')
 
     def _move (self, k, t, m, dirn, held = True):
         self.player.move(dirn, held)

@@ -76,14 +76,14 @@ class Conf (object):
     KEYS_UP = (pg.K_UP, pg.K_w, pg.K_z, pg.K_COMMA)
     KEYS_DOWN = (pg.K_DOWN, pg.K_s, pg.K_o)
     KEYS_DIRN = (KEYS_LEFT, KEYS_UP, KEYS_RIGHT, KEYS_DOWN)
-    KEYS_RESET = (pg.K_r,)
+    KEYS_RESET = (pg.K_r, pg.K_p)
 
     # audio
     MUSIC_AUTOPLAY = False # just pauses music
     MUSIC_VOLUME = dd(.5) # per-backend
     SOUND_VOLUME = .5
     EVENT_ENDMUSIC = pg.USEREVENT
-    SOUND_VOLUMES = dd(1)
+    SOUND_VOLUMES = dd(1, jump = 1, step = .2, door = .5)
     # generate SOUNDS = {ID: num_sounds}
     SOUNDS = {}
     ss = glob(join_path(SOUND_DIR, '*.ogg'))
@@ -97,6 +97,7 @@ class Conf (object):
                 if ident:
                     n = SOUNDS.get(ident, 0)
                     SOUNDS[ident] = n + 1
+    STEP_SOUND_TIME = {'player': 15, 'enemy': 20}
 
     # text rendering
     # per-backend, each a {key: value} dict to update fonthandler.Fonts with
@@ -120,7 +121,8 @@ class Conf (object):
     START_SEEK = 200
     STOP_SEEK = 300
     SEEK_TIME = 90
-    STOP_RETURN = 7
+    STOP_RETURN = 5
+    # timing/cutscenes
 
     # levels
     # y positions are the tile beneath the object (what it's standing on)
@@ -190,7 +192,7 @@ class Conf (object):
         'player': (16, 11),
         'enemies': [(30, 11)],
         'changers': [(15, 15)],
-        'barriers': [],
+        'barriers': [(14, 17, 15, 1)],
         'goal': (32, 16),
         'solid': [(0, 0, 14, 27), (34, 0, 14, 27), (14, 18, 20, 9),
                   (14, 11, 4, 1), (21, 11, 13, 1), (14, 15, 4, 1),

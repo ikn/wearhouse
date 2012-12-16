@@ -80,6 +80,7 @@ class MovingEntity (Entity):
         self.jumping = False
         self._jump_time = 0
         self._jumped = False
+        self._step_snd_counter = 0
         self._extra_collide_es = []
 
     def collide (self, e, axis, dirn):
@@ -120,6 +121,11 @@ class MovingEntity (Entity):
         ident = self.__class__.__name__.lower()
         speed = conf.MOVE_SPEED[ident] if self.on_ground else conf.MOVE_SPEED_AIR[ident]
         self._to_move[dirn] = speed
+        if self.on_ground:
+            self._step_snd_counter -= 1
+            if self._step_snd_counter <= 0:
+                self._step_snd_counter = conf.STEP_SOUND_TIME[ident]
+                self.level.game.play_snd('hit', conf.SOUND_VOLUMES['step'])
 
     def jump (self, held):
         ident = self.__class__.__name__.lower()
@@ -129,6 +135,7 @@ class MovingEntity (Entity):
             self.jumping = True
             self._jump_time = conf.JUMP_TIME[ident]
             self._jumped = True
+            self.level.game.play_snd('hit', conf.SOUND_VOLUMES['jump'])
         elif held and self.jumping and not self._jumped:
             # continue jumping
             self.vel[1] -= conf.JUMP_CONTINUE[ident]
@@ -165,6 +172,7 @@ class Player (MovingEntity):
         self.colour = (200, 50, 50)
         self.villain = False
         self._extra_collide_es = self.level.barriers + [self.level.goal]
+        self.dead = False
 
     def move (self, dirn, held):
         if dirn in (0, 2):
@@ -175,6 +183,7 @@ class Player (MovingEntity):
         else: # dirn == 3
             r = self.rect
             if any(r.colliderect(c.rect) for c in self.level.changers):
+                self.level.game.play_snd('change')
                 self.villain = not self.villain
                 self.colour = (100, 20, 20) if self.villain else (200, 50, 50)
             for s in self.level.switches:
@@ -182,7 +191,10 @@ class Player (MovingEntity):
                     s.toggle()
 
     def die (self):
-        self.level.restart()
+        if not self.dead:
+            self.dead = True
+            self.level.restart()
+            self.level.game.play_snd('die')
 
     def collide (self, e, axis, dirn):
         MovingEntity.collide(self, e, axis, dirn)
@@ -219,7 +231,9 @@ class Enemy (MovingEntity):
             self.die()
 
     def die (self):
-        self.dead = True
+        if not self.dead:
+            self.dead = True
+            self.level.game.play_snd('zap')
 
     def dist (self, rect):
         pos = self.rect.center
@@ -288,12 +302,13 @@ class Enemy (MovingEntity):
                 if self._los_time <= 0:
                     self._seeking = False
             elif dist <= conf.START_SEEK and los:
+                self.level.game.play_snd('alert-guard')
                 self._seeking = True
             if self._seeking:
                 self._move_towards(dp)
         if not self._seeking:
             (pos0, pos1), dp, dist = self.dist(self._initial_rect)
-            if dist > conf.STOP_RETURN:
+            if abs(dp[0]) > conf.STOP_RETURN:
                 self._move_towards(dp)
 
 

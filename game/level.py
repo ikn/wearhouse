@@ -65,6 +65,7 @@ class Level (object):
             self.game.scheduler.add_timeout(self._real_win, seconds = conf.WIN_TIME)
             self.game.linear_fade(*conf.WIN_FADE)
             self.game.play_snd('door')
+            self.goal.start_anim(0)
 
     def _move (self, k, t, m, dirn, held = True):
         self.player.move(dirn, held)

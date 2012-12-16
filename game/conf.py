@@ -108,11 +108,12 @@ class Conf (object):
     IMG_OFFSETS = dd((0, 0), changer = (-1, 0))
     BG_TILE_SIZE = 15
     BG_SIZE = (64, 36)
+    BARRIER_COLOUR = (255, 100, 100, 120)
 
     # gameplay
     TILE_SIZE = 20
     LEVEL_SIZE = (48, 27)
-    SIZES = {'player': (18, 37), 'enemy': (18, 18), 'changer': (20, 40),
+    SIZES = {'player': (20, 37), 'enemy': (16, 18), 'changer': (20, 40),
              'switch': (20, 20), 'goal': (20, 40)}
     # movement
     GRAVITY = .8

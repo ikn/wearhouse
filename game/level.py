@@ -19,22 +19,35 @@ class Level (object):
         ])
         self.ident = ident
         self.rect = pg.Rect((0, 0), [conf.TILE_SIZE * x for x in conf.LEVEL_SIZE])
+        game.linear_fade(*conf.START_FADE)
+        self.bg = pg.Surface(conf.RES)
+        self._last_ident = None
         self.init()
 
     def init (self):
         data = conf.LEVELS[self.ident]
-        self.changers = [entity.Changer(pos) for pos in data.get('changers', [])]
-        self.barriers = bs = [entity.Barrier(r) for r in data.get('barriers', [])]
+        if self._last_ident != self.ident:
+            # don't reinitialise if on the same level so random tiles don't change
+            entity.BG(self, (0, 0) + conf.BG_SIZE).draw(self.bg)
+            self.changers = [entity.Changer(self, pos) for pos in data.get('changers', [])]
+            self.barriers = bs = [entity.Barrier(self, r) for r in data.get('barriers', [])]
+            self.goal = entity.Goal(self, data['goal'])
+            self.solid = [entity.SolidRect(self, r) for r in data.get('solid', [])]
+        else:
+            bs = self.barriers
+            for b in bs:
+                b.on = True
+        # switches have changeable state I can't be bothered to reset
         self.switches = [entity.Switch(self, pos, bs[b]) for pos, b in data.get('switches', [])]
-        self.goal = entity.Goal(data['goal'])
         self.nonsolid = self.changers + self.barriers + self.switches + [self.goal]
         self.player = entity.Player(self, data['player'])
         self.enemies = [entity.Enemy(self, pos) for pos in data.get('enemies', [])]
         self.moving = self.enemies + [self.player]
-        self.solid = [entity.SolidRect(r) for r in data.get('solid', [])]
         self.dirty = True
         self._restart = False
         self._win = False
+        self._winning = False
+        self._last_ident = self.ident
 
     def _real_restart (self, *args):
         self._restart = True
@@ -43,9 +56,15 @@ class Level (object):
         self.game.scheduler.add_timeout(self._real_restart, seconds = conf.RESTART_TIME)
         self.game.linear_fade(*conf.RESTART_FADE)
 
-    def win (self):
+    def _real_win (self):
         self._win = True
-        self.game.play_snd('door')
+
+    def win (self):
+        if not self._winning:
+            self._winning = True
+            self.game.scheduler.add_timeout(self._real_win, seconds = conf.WIN_TIME)
+            self.game.linear_fade(*conf.WIN_FADE)
+            self.game.play_snd('door')
 
     def _move (self, k, t, m, dirn, held = True):
         self.player.move(dirn, held)
@@ -65,19 +84,19 @@ class Level (object):
     def draw (self, screen):
         rects = []
         if self.dirty:
-            screen.fill((255, 255, 255))
+            screen.blit(self.bg, (0, 0))
             for e in self.solid:
                 e.draw(screen)
         else:
             for e in self.moving:
                 for r in e.dirty_rect():
                     rects.append(r)
-            for b in self.barriers:
-                if b.dirty:
-                    rects.append(b.rect)
-                    b.dirty = False
+            for e in self.nonsolid:
+                if e.dirty:
+                    rects.append(e.rect)
+                    e.dirty = False
             for r in rects:
-                screen.fill((255, 255, 255), r)
+                screen.blit(self.bg, r, r)
         for e in self.nonsolid + self.moving:
             e.draw(screen)
         if self.dirty:

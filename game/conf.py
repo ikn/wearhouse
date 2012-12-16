@@ -104,11 +104,16 @@ class Conf (object):
     # per-backend, each a {key: value} dict to update fonthandler.Fonts with
     REQUIRED_FONTS = dd({})
 
+    # graphics
+    IMG_OFFSETS = dd((0, 0), changer = (-1, 0))
+    BG_TILE_SIZE = 15
+    BG_SIZE = (64, 36)
+
     # gameplay
     TILE_SIZE = 20
     LEVEL_SIZE = (48, 27)
     SIZES = {'player': (18, 37), 'enemy': (18, 18), 'changer': (20, 40),
-             'switch': (15, 15), 'goal': (20, 40)}
+             'switch': (21, 18), 'goal': (20, 40)}
     # movement
     GRAVITY = .8
     AIR_RESISTANCE = (.9, .9)
@@ -125,9 +130,12 @@ class Conf (object):
     STOP_RETURN = 5
     # timing/cutscenes
     SWITCH_TIME = 1
+    START_FADE = ((0, 0, 0), (False, 1))
     RESTART_TIME = 1
     RESTART_FADE = (False, ((255, 255, 255), 1), ((255, 255, 255), 1.5),
                     (False, 2))
+    WIN_TIME = 1
+    WIN_FADE = (False, (False, .5), ((0, 0, 0), 1), ((0, 0, 0), 1.5), (False, 2))
 
     # levels
     # y positions are the tile beneath the object (what it's standing on)

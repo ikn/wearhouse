@@ -369,15 +369,12 @@ base_ID: the ID of the sound to play (we look for base_ID + i for a number i,
 volume: float to scale volume by.
 
 """
-        if base_ID == 'lever':
-            print 'play'
         ID = randrange(conf.SOUNDS[base_ID])
         # load sound
         snd = conf.SOUND_DIR + base_ID + str(ID) + '.ogg'
         snd = pg.mixer.Sound(snd)
         mx = conf.MAX_SOUNDS[base_ID]
         if snd.get_length() < 10 ** -3:
-            print 'bad', base_ID, ID
             # no way this is valid
             return
         # stop oldest sound, if necessary
@@ -390,8 +387,6 @@ volume: float to scale volume by.
         volume *= conf.SOUND_VOLUME * conf.SOUND_VOLUMES[base_ID]
         snd.set_volume(volume)
         snd.play()
-        if base_ID == 'lever':
-            print 'play', ID
 
     def find_music (self):
         """Store a list of music files."""
@@ -599,7 +594,8 @@ Takes the persist argument taken by Game.fade.
                 if x1 is None:
                     # both are no overlay: colour doesn't matter
                     o.append(0)
-                o.append(x1)
+                else:
+                    o.append(x1)
             elif x1 is None:
                 o.append(x0)
             else:

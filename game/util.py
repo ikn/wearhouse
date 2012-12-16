@@ -10,8 +10,9 @@ import conf
 # abstract
 
 
-def scale_up (l):
-    ts = conf.conf.TILE_SIZE
+def scale_up (l, ts = None):
+    if ts is None:
+        ts = conf.conf.TILE_SIZE
     return [x * ts for x in l]
 
 

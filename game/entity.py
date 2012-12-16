@@ -1,24 +1,57 @@
 import pygame as pg
 
 from conf import conf
-from util import ir, scale_up
+from util import ir, scale_up, weighted_rand
 
 
 class Rect (object):
-    def __init__ (self, rect):
-        self.rect = pg.Rect(scale_up(rect))
+    def __init__ (self, level, rect):
+        self.ident = self.__class__.__name__.lower()
+        self.level = level
+        if not hasattr(self, 'tile_size'):
+            self.tile_size = conf.TILE_SIZE
+        ts = self.tile_size
+        self.rect = pg.Rect(scale_up(rect, ts))
+        # load image
+        try:
+            imgs = {}
+            for i, weighting in enumerate(self.img_freqs):
+                imgs[level.game.img('{0}{1}.png'.format(self.ident, i))] = weighting
+        except Exception, e:
+            print e
+            self.img_map = None
+        else:
+            w, h = self.rect.size
+            self.img_map = img_map = []
+            for x in xrange(w / ts):
+                col = []
+                img_map.append(col)
+                for y in xrange(h / ts):
+                    col.append(weighted_rand(imgs))
 
     def draw (self, screen):
-        screen.fill(self.colour, self.rect)
+        if self.img_map is None:
+            screen.fill(self.colour, self.rect)
+        else:
+            ts = self.tile_size
+            x0, y0 = self.rect.topleft
+            for x, col in enumerate(self.img_map):
+                for y, img in enumerate(col):
+                    screen.blit(img, (x0 + ts * x, y0 + ts * y))
+
+
+class BG (Rect):
+    tile_size = conf.BG_TILE_SIZE
+    img_freqs = (1, .8, .05, .1, .07, .1, .07, .02)
 
 
 class SolidRect (Rect):
-    colour = (0, 0, 0)
+    img_freqs = BG.img_freqs
 
 
 class Barrier (Rect):
-    def __init__ (self, rect):
-        Rect.__init__(self, rect)
+    def __init__ (self, level, rect):
+        Rect.__init__(self, level, rect)
         self.colour = (255, 150, 100)
         self.on = True
         self.dirty = False
@@ -33,39 +66,57 @@ class Barrier (Rect):
 
 
 class Entity (object):
-    def __init__ (self, pos):
+    def __init__ (self, level, pos):
+        self.ident = self.__class__.__name__.lower()
+        self.level = level
         pos = scale_up(pos)
-        size = conf.SIZES[self.__class__.__name__.lower()]
+        size = conf.SIZES[self.ident]
         ts = conf.TILE_SIZE
         # move to centre of bottom edge of lower tile
         overlap = size[0] % ts
         if overlap != 0:
             pos[0] += (ts - overlap) / 2
         pos[1] -= size[1]
-        x, y = pos
-        ix, iy = ir(x), ir(y)
-        self.overflow = [x - ix, y - iy]
-        self.rect = pg.Rect((ix, iy), size)
+        # load image
+        try:
+            self.img = level.game.img(self.ident + '.png')
+        except Exception, e:
+            print e
+            self.img = None
+        else:
+            self.offset = conf.IMG_OFFSETS[self.ident]
+        # set rect
+        self.rect = pg.Rect(pos, size)
+        self.overflow = [0, 0]
+        self.dirty = False
 
     def draw (self, screen):
-        screen.fill(self.colour, self.rect)
+        if self.img is None:
+            screen.fill(self.colour, self.rect)
+        else:
+            screen.blit(self.img, self.rect.move(self.offset))
 
 
 class Changer (Entity):
-    colour = (50, 50, 200)
+    pass
 
 
 class Switch (Entity):
     def __init__ (self, level, pos, barrier):
-        Entity.__init__(self, pos)
-        self.level = level
-        self.colour = (50, 150, 50)
+        Entity.__init__(self, level, pos)
         self.barrier = barrier
         self._switching = False
+        self.colour = (255, 255, 255)
+        self.on = True
+        self.img_on = self.img
+        self.img_off = self.level.game.img(self.ident + '-off.png')
 
     def _end_toggle (self):
         self.barrier.toggle()
         self._switching = False
+        self.on = not self.on
+        self.img = self.img_on if self.on else self.img_off
+        self.dirty = True
 
     def toggle (self):
         g = self.level.game
@@ -85,7 +136,7 @@ class Goal (Entity):
 class MovingEntity (Entity):
     def __init__ (self, level, pos):
         self.level = level
-        Entity.__init__(self, pos)
+        Entity.__init__(self, level, pos)
         # some initial values
         self.vel = [0, 0]
         self.on_ground = False
@@ -218,6 +269,8 @@ class Player (MovingEntity):
         elif isinstance(e, Barrier) and e.on and not self.villain:
             self.die()
         elif isinstance(e, Goal) and not self.dead:
+            # stop moving
+            self.dead = True
             self.level.win()
 
 

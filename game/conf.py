@@ -12,7 +12,7 @@ from util import dd
 
 class Conf (object):
 
-    IDENT = 'game'
+    IDENT = 'wearhouse'
     USE_SAVEDATA = False
     USE_FONTS = False
 
@@ -46,8 +46,8 @@ class Conf (object):
     FONT_DIR = DATA_DIR + 'font' + sep
 
     # display
-    WINDOW_ICON = None #IMG_DIR + 'icon.png'
-    WINDOW_TITLE = ''
+    WINDOW_ICON = IMG_DIR + 'player.png'
+    WINDOW_TITLE = 'Wearhouse'
     MOUSE_VISIBLE = dd(False) # per-backend
     FLAGS = 0
     FULLSCREEN = False

@@ -125,10 +125,10 @@ class Conf (object):
     JUMP_CONTINUE = {'player': 2.2, 'enemy': 2}
     JUMP_TIME = {'player': 4, 'enemy': 4}
     # AI
-    START_SEEK = 200
-    STOP_SEEK = 300
+    START_SEEK_NEAR = 200
+    STOP_SEEK_FAR = 300
+    STOP_SEEK_NEAR = 5
     SEEK_TIME = 90
-    STOP_RETURN = 5
     # timing/cutscenes
     START_FADE = ((0, 0, 0), (False, 1))
     RESTART_TIME = 1

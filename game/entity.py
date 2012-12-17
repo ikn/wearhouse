@@ -4,6 +4,10 @@ from conf import conf
 from util import ir, scale_up, weighted_rand, dd
 
 
+def solid (e):
+    return e.__class__ in SOLID_ES and not (hasattr(e, 'dead') and e.dead)
+
+
 class Rect (object):
     def __init__ (self, level, rect):
         self.ident = self.__class__.__name__.lower()
@@ -179,7 +183,7 @@ class MovingEntity (Entity):
         self.vel = [0, 0]
         self.overflow = [0, 0]
         self.on_ground = False
-        self._to_move = [False, False]
+        self._to_move = [0, 0]
         self.jumping = False
         self._jump_time = 0
         self._jumped = False
@@ -187,7 +191,7 @@ class MovingEntity (Entity):
         self._extra_collide_es = []
 
     def collide (self, e, axis, dirn):
-        if e.__class__ in SOLID_ES and not (isinstance(e, Enemy) and e.dead):
+        if solid(e):
             if axis == 1 and dirn == 1:
                 self.on_ground = True
             return True
@@ -221,27 +225,19 @@ class MovingEntity (Entity):
                     break
 
     def run (self, dirn):
-        ident = self.__class__.__name__.lower()
-        speed = conf.MOVE_SPEED[ident] if self.on_ground else conf.MOVE_SPEED_AIR[ident]
-        self._to_move[dirn] = speed
-        if self.on_ground:
-            self._step_snd_counter -= 1
-            if self._step_snd_counter <= 0:
-                self._step_snd_counter = conf.STEP_SOUND_TIME[ident]
-                self.level.game.play_snd('hit', conf.SOUND_VOLUMES['step'])
+        self._to_move[dirn] = 1
 
     def jump (self, held):
-        ident = self.__class__.__name__.lower()
         if not held and not self.jumping and self.on_ground:
             # start jumping
-            self.vel[1] -= conf.JUMP_INITIAL[ident]
+            self.vel[1] -= conf.JUMP_INITIAL[self.ident]
             self.jumping = True
-            self._jump_time = conf.JUMP_TIME[ident]
+            self._jump_time = conf.JUMP_TIME[self.ident]
             self._jumped = True
             self.level.game.play_snd('hit', conf.SOUND_VOLUMES['jump'])
         elif held and self.jumping and not self._jumped:
             # continue jumping
-            self.vel[1] -= conf.JUMP_CONTINUE[ident]
+            self.vel[1] -= conf.JUMP_CONTINUE[self.ident]
             self._jumped = True
             self._jump_time -= 1
             if self._jump_time <= 0:
@@ -256,17 +252,39 @@ class MovingEntity (Entity):
             self.jumping = False
         self._jumped = False
         # vel
-        self._old_rect = self.rect.copy()
         v = self.vel
-        v[0] += self._to_move[1] - self._to_move[0]
-        self._to_move = [False, False]
+        speed = conf.MOVE_SPEED[self.ident] if self.on_ground else conf.MOVE_SPEED_AIR[self.ident]
+        dirn = self._to_move[1] - self._to_move[0]
+        self._to_move = [0, 0]
+        v[0] += speed * dirn
         v[1] += conf.GRAVITY
         damp = conf.FRICTION if self.on_ground else conf.AIR_RESISTANCE
         for i in (0, 1):
             v[i] *= damp[i]
+        # run sound
+        if dirn != 0 and self.on_ground:
+            self._step_snd_counter -= 1
+            if self._step_snd_counter <= 0:
+                self._step_snd_counter = conf.STEP_SOUND_TIME[self.ident]
+                self.level.game.play_snd('hit', conf.SOUND_VOLUMES['step'])
         # pos
         self.on_ground = False
+        self._old_rect = self.rect.copy()
         self.move_by(v)
+        # image
+        if dirn == 0:
+            if self.walking:
+                self.walking = False
+                self.update_img()
+                self.stop_anim()
+        else:
+            if not self.walking or self.dirn != dirn:
+                self.dirn = dirn
+                self.walking = True
+                self.update_img()
+                self.start_anim()
+            else:
+                self.dirn = dirn
 
 
 class Player (MovingEntity):
@@ -280,30 +298,19 @@ class Player (MovingEntity):
         self.villain = False
         self._extra_collide_es = self.level.barriers + [self.level.goal]
         self.dead = False
-        self._walking = -1
-        self._moved = False
+        self.dirn = 1
+        self.walking = False
 
     def update_img (self):
-        w = self._walking
-        img = 'villain' if self.villain else ''
-        if w >= 0:
-            img += ('left', 'right')[w]
-        else:
-            img += ('standleft', '')[w + 2]
-        self.set_img(img)
+        self.set_img(('villain' if self.villain else '') + \
+                     (('standleft', ''), ('left', 'right'))[self.walking][(self.dirn + 1) / 2])
 
     def move (self, dirn, held):
         if self.dead:
             return
         if dirn in (0, 2):
             if held:
-                dirn /= 2
-                if self._walking != dirn:
-                    self._walking = dirn
-                    self.update_img()
-                    self.start_anim()
-                self._moved = True
-                self.run(dirn)
+                self.run(dirn / 2)
         elif dirn == 1:
             self.jump(held)
         else: # dirn == 3
@@ -326,7 +333,7 @@ class Player (MovingEntity):
         if self.dead:
             return isinstance(e, SolidRect)
         MovingEntity.collide(self, e, axis, dirn)
-        if e.__class__ in SOLID_ES and not (hasattr(e, 'dead') and e.dead):
+        if solid(e):
             return True
         elif isinstance(e, Barrier) and e.on and not self.villain:
             self.die()
@@ -334,16 +341,6 @@ class Player (MovingEntity):
             # stop moving
             self.dead = True
             self.level.win()
-
-    def update (self):
-        MovingEntity.update(self)
-        if not self._moved:
-            if self._walking >= 0:
-                self._walking -= 2
-            self.stop_anim()
-            self.update_img()
-        else:
-            self._moved = False
 
 
 class Enemy (MovingEntity):
@@ -360,8 +357,11 @@ class Enemy (MovingEntity):
         self._initial_rect = self.rect.copy()
         self._blocked = False
         self.dead = False
-        self._walking = False
-        self._moved = False
+        self.walking = False
+        self.dirn = 1
+
+    def update_img (self):
+        self.set_img(('', 'right')[(self.dirn + 1) / 2])
 
     def collide (self, e, axis, dirn):
         if self.dead:
@@ -369,7 +369,7 @@ class Enemy (MovingEntity):
         MovingEntity.collide(self, e, axis, dirn)
         if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
             e.die()
-        elif e.__class__ in SOLID_ES and not (hasattr(e, 'dead') and e.dead):
+        elif solid(e):
             if axis == 0:
                 self._blocked = True
             return True
@@ -389,28 +389,18 @@ class Enemy (MovingEntity):
         return ((pos, other_pos), (dx, dy), (dx * dx + dy * dy) ** .5)
 
     def _move_towards (self, dp):
-        if dp[0] != 0:
-            dirn = int(dp[0] > 0)
-            if self._walking is not dirn:
-                self._walking = dirn
-                self.set_img(('', 'right')[dirn])
-                self.start_anim()
-            self._moved = True
-            self.run(dirn)
+        if abs(dp[0]) > conf.STOP_SEEK_NEAR:
+            self.run(dp[0] > 0)
         if self._blocked or self.jumping:
             self.jump(self.jumping)
 
     def update (self):
         self._blocked = False
-        self._los_time -= 1
         MovingEntity.update(self)
-        if not self._moved and self._walking is not False:
-            self._walking = False
-            self.stop_anim()
-        else:
-            self._moved = False
         if self.dead:
             return
+        # AI
+        self._los_time -= 1
         player = self.level.player
         if player.villain:
             self._seeking = False
@@ -449,7 +439,7 @@ class Enemy (MovingEntity):
                     if y0 < m * x1 + c < y1 and lx0 < x1 < lx1:
                         los = False
                         break
-            max_dist = conf.STOP_SEEK if self._seeking else conf.START_SEEK
+            max_dist = conf.STOP_SEEK_FAR if self._seeking else conf.START_SEEK_NEAR
             if dist > max_dist:
                 los = False
             if los:
@@ -458,15 +448,14 @@ class Enemy (MovingEntity):
             if self._seeking:
                 if self._los_time <= 0:
                     self._seeking = False
-            elif dist <= conf.START_SEEK and los:
+            elif dist <= conf.START_SEEK_NEAR and los:
                 self.level.game.play_snd('alert-guard')
                 self._seeking = True
             if self._seeking:
                 self._move_towards(dp)
         if not self._seeking:
             (pos0, pos1), dp, dist = self.dist(self._initial_rect)
-            if abs(dp[0]) > conf.STOP_RETURN:
-                self._move_towards(dp)
+            self._move_towards(dp)
 
 
 SOLID_ES = (Player, Enemy, SolidRect, pg.Rect)

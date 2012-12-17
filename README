@@ -1,7 +1,7 @@
-Wearhouse: this is a game made for Ludum Dare 25 (theme 'you are the villain'),
-a puzzle platformer about infiltrating the bad guy's warehouse hideout.  To
-help you do so, you can change your appearance to look like this bad guy, using
-his usefully-placed wardrobes.
+Wearhouse: a game made for Ludum Dare 25 (theme 'you are the villain'), a
+puzzle platformer about infiltrating the bad guy's warehouse hideout.  To help
+you do so, you can change your appearance to look like this bad guy, using his
+usefully-placed wardrobes.
 
     DEPENDENCIES
 
@@ -35,3 +35,9 @@ WASD and R are in the same place in Dvorak too.
     LICENSING
 
 Source code is available under the GPL version 3 (included).
+
+Sounds are created using bfxr, and I release them under the Creative Commons
+CC0 license (public domain): http://creativecommons.org/publicdomain/zero/1.0/
+
+Images are available under the Creative Commons Attribution-ShareAlike 3.0
+Unported license: http://creativecommons.org/licenses/by-sa/3.0/

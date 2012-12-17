@@ -116,19 +116,19 @@ class Conf (object):
     SIZES = {'player': (20, 37), 'enemy': (16, 18), 'changer': (20, 40),
              'switch': (20, 20), 'goal': (20, 40)}
     # movement
-    GRAVITY = .8
-    AIR_RESISTANCE = (.9, .9)
+    GRAVITY = .8 # making this much smaller breaks on_ground
+    AIR_RESISTANCE = (.9, .8)
     FRICTION = (.75, .9)
-    MOVE_SPEED = {'player': 1.5, 'enemy': .7}
+    MOVE_SPEED = {'player': 1, 'enemy': .5}
     MOVE_SPEED_AIR = {'player': .5, 'enemy': .1}
-    JUMP_INITIAL = {'player': 4.4, 'enemy': 4}
-    JUMP_CONTINUE = {'player': 2.2, 'enemy': 2}
+    JUMP_INITIAL = {'player': 4.5, 'enemy': 4.5}
+    JUMP_CONTINUE = {'player': 3, 'enemy': 2.5}
     JUMP_TIME = {'player': 4, 'enemy': 4}
     # AI
     START_SEEK_NEAR = 200
     STOP_SEEK_FAR = 300
     STOP_SEEK_NEAR = 5
-    SEEK_TIME = 90
+    SEEK_TIME = 150
     # timing/cutscenes
     START_FADE = ((0, 0, 0), (False, 1))
     RESTART_TIME = 1
@@ -147,14 +147,14 @@ class Conf (object):
         'goal': (10, 12),
         'solid': [(0, 15, 48, 13), (0, 14, 23, 1), (0, 12, 15, 2)]
     }, {
-        'player': (23, 8),
-        'enemies': [(23, 11), (23, 13), (23, 15), (23, 17)],
+        'player': (23, 5),
+        'enemies': [(23, 8), (23, 10), (23, 15), (23, 17)],
         'goal': (23, 20),
-        'solid': [(0, 0, 48, 5), (0, 5, 15, 22), (32, 5, 16, 22),
-                  (16, 8, 15, 2), (16, 10, 1, 2), (16, 13, 1, 3),
-                  (16, 17, 1, 3), (30, 11, 1, 3), (30, 15, 1, 5),
-                  (23, 11, 1, 1), (17, 13, 9, 1), (23, 15, 1, 1),
-                  (17, 17, 9, 1), (18, 24, 11, 1), (15, 25, 17, 1)]
+        'solid': [(0, 0, 15, 27), (32, 0, 16, 27), (16, 5, 15, 2),
+                  (16, 7, 1, 2), (16, 10, 1, 6), (17, 17, 1, 3),
+                  (30, 8, 1, 6), (30, 15, 1, 5), (23, 8, 1, 1),
+                  (17, 10, 9, 4), (23, 15, 1, 1), (18, 17, 8, 1),
+                  (18, 24, 11, 1), (15, 25, 17, 2)]
     }, {
         'player': (28, 19),
         'enemies': [(31, 16), (35, 17), (37, 16)],

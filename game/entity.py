@@ -51,6 +51,7 @@ class SolidRect (Rect):
 class Entity (object):
     img_rect = None
     imgs = ('',)
+    img = ''
     anims = {}
 
     def __init__ (self, level, pos, size = None, img = None):
@@ -65,27 +66,21 @@ class Entity (object):
             if overlap != 0:
                 pos[0] += (ts - overlap) / 2
             pos[1] -= size[1]
-        self.rect = pg.Rect(pos, size)
-        # load image
+        self.draw_rect = self.rect = pg.Rect(pos, size)
+        # load images
         imgs = {}
         if img is None:
-            try:
-                for ext in self.imgs:
-                    img = level.game.img(self.ident + ('-' if ext else '') + ext + '.png')
-                    imgs[ext] = img
-            except Exception, e:
-                print e
-                imgs[''] = None
+            for ext in self.imgs:
+                img = level.game.img(self.ident + ('-' if ext else '') + ext + '.png')
+                imgs[ext] = img
         else:
-            imgs[''] = img
+            imgs[self.img] = img
         self.imgs = imgs
-        self.img = ''
-        if imgs[''] is not None:
-            self.offset = conf.IMG_OFFSETS[self.ident]
-            if self.img_rect is None:
-                self.img_rect = self.imgs[''].get_rect()
-            self.anim_offset = 0
-            self.anim = False
+        self.offset = conf.IMG_OFFSETS[self.ident]
+        if self.img_rect is None:
+            self.img_rect = self.imgs[self.img].get_rect()
+        self.anim_offset = 0
+        self.anim = False
         self.dirty = False
 
     def set_img (self, img):
@@ -123,12 +118,8 @@ class Entity (object):
         return True
 
     def draw (self, screen):
-        img = self.imgs[self.img]
-        if img is None:
-            screen.fill(self.colour, self.rect)
-        else:
-            r = self.img_rect.move(self.anim_offset * self.img_rect.width, 0)
-            screen.blit(img, self.rect.move(self.offset), r)
+        r = self.img_rect.move(self.anim_offset * self.img_rect.width, 0)
+        screen.blit(self.imgs[self.img], self.rect.move(self.offset), r)
 
 
 class Barrier (Entity):
@@ -154,7 +145,8 @@ class Changer (Entity):
 
 
 class Switch (Entity):
-    imgs = ('', 'off')
+    imgs = ('on', 'off')
+    img = 'on'
 
     def __init__ (self, level, pos, barrier):
         Entity.__init__(self, level, pos)
@@ -166,7 +158,7 @@ class Switch (Entity):
         g.play_snd('lever')
         self.barrier.toggle()
         self.on = not self.on
-        self.set_img('' if self.on else 'off')
+        self.set_img('on' if self.on else 'off')
         self.dirty = True
 
 
@@ -189,6 +181,8 @@ class MovingEntity (Entity):
         self._jumped = False
         self._step_snd_counter = 0
         self._extra_collide_es = []
+        self.dirn = -1
+        self.walking = False
 
     def collide (self, e, axis, dirn):
         if solid(e):
@@ -288,8 +282,9 @@ class MovingEntity (Entity):
 
 
 class Player (MovingEntity):
-    imgs = ('', 'standleft', 'right', 'left', 'villain', 'villainstandleft',
-            'villainright', 'villainleft')
+    imgs = ('left', 'right', 'walkleft', 'walkright', 'villainleft',
+            'villainright', 'villainwalkleft', 'villainwalkright')
+    img = 'left'
     anims = dd(5)
     img_rect = pg.Rect(0, 0, 20, 40)
 
@@ -298,12 +293,11 @@ class Player (MovingEntity):
         self.villain = False
         self._extra_collide_es = self.level.barriers + [self.level.goal]
         self.dead = False
-        self.dirn = 1
-        self.walking = False
 
     def update_img (self):
         self.set_img(('villain' if self.villain else '') + \
-                     (('standleft', ''), ('left', 'right'))[self.walking][(self.dirn + 1) / 2])
+                     ('walk' if self.walking else '') + \
+                     ('left' if self.dirn == -1 else 'right'))
 
     def move (self, dirn, held):
         if self.dead:
@@ -344,7 +338,8 @@ class Player (MovingEntity):
 
 
 class Enemy (MovingEntity):
-    imgs = ('', 'right')
+    imgs = ('left', 'right')
+    img = 'left'
     anims = dd(5)
     img_rect = pg.Rect(0, 0, 16, 18)
 
@@ -357,11 +352,9 @@ class Enemy (MovingEntity):
         self._initial_rect = self.rect.copy()
         self._blocked = False
         self.dead = False
-        self.walking = False
-        self.dirn = 1
 
     def update_img (self):
-        self.set_img(('', 'right')[(self.dirn + 1) / 2])
+        self.set_img('left' if self.dirn == -1 else 'right')
 
     def collide (self, e, axis, dirn):
         if self.dead:

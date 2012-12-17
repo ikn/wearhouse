@@ -15,7 +15,8 @@ class Level (object):
             (conf.KEYS_UP + conf.KEYS_NEXT, [(self._move, (1,))], eh.MODE_HELD),
             (conf.KEYS_RIGHT, [(self._move, (2,))], eh.MODE_HELD),
             (conf.KEYS_DOWN, [(self._move, (3,))], eh.MODE_ONDOWN),
-            (conf.KEYS_RESET, self._real_restart, eh.MODE_ONDOWN)
+            (conf.KEYS_RESET, self._real_restart, eh.MODE_ONDOWN),
+            (conf.KEYS_BACK, lambda *args: game.quit_backend(), eh.MODE_ONDOWN)
         ])
         self.ident = ident
         self.rect = pg.Rect((0, 0), [conf.TILE_SIZE * x for x in conf.LEVEL_SIZE])

@@ -28,6 +28,7 @@ arrow keys, WASD, space: move, jump, interact with objects
 R: reset current level
 F11, alt + enter: toggle fullscreen
 F10: minimise
+escape, backspace: quit
 
 WASD and R are in the same place in Dvorak too.
 

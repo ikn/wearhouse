@@ -402,13 +402,13 @@ class Enemy (MovingEntity):
         self._blocked = False
         self._los_time -= 1
         MovingEntity.update(self)
-        if self.dead:
-            return
         if not self._moved and self._walking is not False:
             self._walking = False
             self.stop_anim()
         else:
             self._moved = False
+        if self.dead:
+            return
         player = self.level.player
         if player.villain:
             self._seeking = False

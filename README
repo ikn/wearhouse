@@ -1,4 +1,7 @@
-This is a game made for Ludum Dare 25 (theme 'you are the villain').
+This is a game made for Ludum Dare 25 (theme 'you are the villain'), a puzzle
+platformer about infiltrating the bad guy's warehouse hideout.  To help you do
+so, you can change your appearance to look like this bad guy, using his
+usefully-placed wardrobes.
 
     DEPENDENCIES
 
@@ -15,6 +18,10 @@ do
 On other systems (Windows, for example), run game.py with your Python 2
 executable.
 
+    PLAYING
+
+Move around each level and try to get to the elevator to the next floor.
+
     CONTROLS
 
 arrow keys, WASD, space: move, jump, interact with objects
@@ -22,7 +29,7 @@ R: reset current level
 F11, alt + enter: toggle fullscreen
 F10: minimise
 
-WASD and R are in the same place in Dvorak, AZERTY and Colemak too.
+WASD and R are in the same place in Dvorak too.
 
     LICENSING
 

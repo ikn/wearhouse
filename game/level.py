@@ -11,8 +11,8 @@ class Level (object):
         self.game = game
         event_handler.add_key_handlers([
             (conf.KEYS_LEFT, [(self._move, (0,))], eh.MODE_HELD),
-            (conf.KEYS_UP, [(self._move, (1, False))], eh.MODE_ONDOWN),
-            (conf.KEYS_UP, [(self._move, (1,))], eh.MODE_HELD),
+            (conf.KEYS_UP + conf.KEYS_NEXT, [(self._move, (1, False))], eh.MODE_ONDOWN),
+            (conf.KEYS_UP + conf.KEYS_NEXT, [(self._move, (1,))], eh.MODE_HELD),
             (conf.KEYS_RIGHT, [(self._move, (2,))], eh.MODE_HELD),
             (conf.KEYS_DOWN, [(self._move, (3,))], eh.MODE_ONDOWN),
             (conf.KEYS_RESET, self._real_restart, eh.MODE_ONDOWN)
@@ -76,7 +76,7 @@ class Level (object):
         if self._win:
             self.ident += 1
             if self.ident == len(conf.LEVELS):
-                self.game.quit_backend()
+                self.game.switch_backend(End)
             else:
                 self.init()
         for e in self.moving:
@@ -105,3 +105,31 @@ class Level (object):
             return True
         else:
             return rects
+
+
+class End:
+    def __init__ (self, game, event_handler):
+        self.game = game
+        self.bg = game.img('end.png')
+        event_handler.add_key_handlers([
+            (conf.KEYS_NEXT + conf.KEYS_BACK, self.restart, eh.MODE_ONDOWN)
+        ])
+        game.linear_fade(*conf.START_FADE)
+
+    def _real_restart (self):
+        self.game.switch_backend(Level)
+
+    def restart (self, *args):
+        self.game.linear_fade(*conf.END_FADE, persist = True)
+        self.game.scheduler.add_timeout(self._real_restart, seconds = conf.END_TIME)
+
+    def update (self):
+        pass
+
+    def draw (self, screen):
+        if self.dirty:
+            screen.blit(self.bg, (0, 0))
+            self.dirty = False
+            return True
+        else:
+            return False

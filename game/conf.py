@@ -71,10 +71,11 @@ class Conf (object):
     KEYS_MINIMISE = (pg.K_F10,)
     KEYS_FULLSCREEN = (pg.K_F11, (pg.K_RETURN, pg.KMOD_ALT, True),
                     (pg.K_KP_ENTER, pg.KMOD_ALT, True))
-    KEYS_LEFT = (pg.K_LEFT, pg.K_a, pg.K_q)
+    KEYS_LEFT = (pg.K_LEFT, pg.K_a)
     KEYS_RIGHT = (pg.K_RIGHT, pg.K_d, pg.K_e)
-    KEYS_UP = (pg.K_UP, pg.K_w, pg.K_z, pg.K_COMMA)
-    KEYS_DOWN = (pg.K_DOWN, pg.K_s, pg.K_o)
+    KEYS_UP = (pg.K_UP, pg.K_w, pg.K_COMMA)
+    KEYS_DOWN = (pg.K_DOWN, pg.K_s, pg.K_o, pg.K_LCTRL, pg.K_LSHIFT,
+                 pg.K_RCTRL, pg.K_RSHIFT, pg.K_z, pg.K_x, pg.K_c)
     KEYS_DIRN = (KEYS_LEFT, KEYS_UP, KEYS_RIGHT, KEYS_DOWN)
     KEYS_RESET = (pg.K_r, pg.K_p)
 
@@ -136,6 +137,8 @@ class Conf (object):
                     (False, 2))
     WIN_TIME = 1
     WIN_FADE = (False, (False, .5), ((0, 0, 0), 1), ((0, 0, 0), 1.5), (False, 2))
+    END_TIME = 1
+    END_FADE = (False, ((0, 0, 0), 1))
 
     # levels
     # y positions are the tile beneath the object (what it's standing on)

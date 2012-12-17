@@ -323,8 +323,10 @@ class Player (MovingEntity):
             self.level.game.play_snd('die')
 
     def collide (self, e, axis, dirn):
+        if self.dead:
+            return isinstance(e, SolidRect)
         MovingEntity.collide(self, e, axis, dirn)
-        if e.__class__ in SOLID_ES and not (isinstance(e, Enemy) and e.dead):
+        if e.__class__ in SOLID_ES and not (hasattr(e, 'dead') and e.dead):
             return True
         elif isinstance(e, Barrier) and e.on and not self.villain:
             self.die()
@@ -367,7 +369,7 @@ class Enemy (MovingEntity):
         MovingEntity.collide(self, e, axis, dirn)
         if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
             e.die()
-        elif e.__class__ in SOLID_ES and not (isinstance(e, Enemy) and e.dead):
+        elif e.__class__ in SOLID_ES and not (hasattr(e, 'dead') and e.dead):
             if axis == 0:
                 self._blocked = True
             return True

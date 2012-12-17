@@ -73,10 +73,9 @@ class Conf (object):
                     (pg.K_KP_ENTER, pg.KMOD_ALT, True))
     KEYS_LEFT = (pg.K_LEFT, pg.K_a)
     KEYS_RIGHT = (pg.K_RIGHT, pg.K_d, pg.K_e)
-    KEYS_UP = (pg.K_UP, pg.K_w, pg.K_COMMA)
-    KEYS_DOWN = (pg.K_DOWN, pg.K_s, pg.K_o, pg.K_LCTRL, pg.K_LSHIFT,
-                 pg.K_RCTRL, pg.K_RSHIFT, pg.K_z, pg.K_x, pg.K_c)
-    KEYS_DIRN = (KEYS_LEFT, KEYS_UP, KEYS_RIGHT, KEYS_DOWN)
+    KEYS_JUMP = (pg.K_UP, pg.K_w, pg.K_COMMA) + KEYS_NEXT
+    KEYS_USE = (pg.K_DOWN, pg.K_s, pg.K_o, pg.K_LCTRL, pg.K_LSHIFT, pg.K_RCTRL,
+                pg.K_RSHIFT, pg.K_z, pg.K_x, pg.K_c)
     KEYS_RESET = (pg.K_r, pg.K_p)
 
     # audio
@@ -84,7 +83,7 @@ class Conf (object):
     MUSIC_VOLUME = dd(.5) # per-backend
     SOUND_VOLUME = .5
     EVENT_ENDMUSIC = pg.USEREVENT
-    SOUND_VOLUMES = dd(1, jump = 1, step = .2, door = .8, lever = .5)
+    SOUND_VOLUMES = dd(1, jump = 1, step = .2, door = .8, lever = .5, die = .7)
     # generate SOUNDS = {ID: num_sounds}
     SOUNDS = {}
     ss = glob(join_path(SOUND_DIR, '*.ogg'))

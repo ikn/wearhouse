@@ -11,11 +11,11 @@ class Level (object):
         self.game = game
         event_handler.add_key_handlers([
             (conf.KEYS_LEFT, [(self._move, (0,))], eh.MODE_HELD),
-            (conf.KEYS_UP + conf.KEYS_NEXT, [(self._move, (1, False))], eh.MODE_ONDOWN),
-            (conf.KEYS_UP + conf.KEYS_NEXT, [(self._move, (1,))], eh.MODE_HELD),
+            (conf.KEYS_JUMP, [(self._move, (1, False))], eh.MODE_ONDOWN),
+            (conf.KEYS_JUMP, [(self._move, (1,))], eh.MODE_HELD),
             (conf.KEYS_RIGHT, [(self._move, (2,))], eh.MODE_HELD),
-            (conf.KEYS_DOWN, [(self._move, (3,))], eh.MODE_ONDOWN),
-            (conf.KEYS_RESET, self._real_restart, eh.MODE_ONDOWN),
+            (conf.KEYS_USE, [(self._move, (3,))], eh.MODE_ONDOWN),
+            (conf.KEYS_RESET, self._force_restart, eh.MODE_ONDOWN),
             (conf.KEYS_BACK, lambda *args: game.quit_backend(), eh.MODE_ONDOWN)
         ])
         self.ident = ident
@@ -51,11 +51,14 @@ class Level (object):
         self._last_ident = self.ident
         self._restart_timeout_id = None
 
-    def _real_restart (self, *args):
-        self.game.cancel_fade(False)
+    def _force_restart (self, *args):
         if self._restart_timeout_id is not None:
+            self.game.cancel_fade(False)
             self.game.scheduler.rm_timeout(self._restart_timeout_id)
             self.game.stop_snd('die')
+        self._real_restart()
+
+    def _real_restart (self):
         self._restart = True
 
     def restart (self):

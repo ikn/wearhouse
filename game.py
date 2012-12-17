@@ -373,20 +373,24 @@ volume: float to scale volume by.
         # load sound
         snd = conf.SOUND_DIR + base_ID + str(ID) + '.ogg'
         snd = pg.mixer.Sound(snd)
-        mx = conf.MAX_SOUNDS[base_ID]
         if snd.get_length() < 10 ** -3:
             # no way this is valid
             return
-        # stop oldest sound, if necessary
-        if mx is not None:
-            playing = self.sounds.setdefault(base_ID, [])
-            if len(playing) >= mx:
-                playing.pop(0).stop()
-            playing.append(snd)
+        # store sound, and stop oldest if necessary
+        mx = conf.MAX_SOUNDS[base_ID]
+        playing = self.sounds.setdefault(base_ID, [])
+        if mx is not None and len(playing) >= mx:
+            playing.pop(0).stop()
+        playing.append(snd)
         # play
         volume *= conf.SOUND_VOLUME * conf.SOUND_VOLUMES[base_ID]
         snd.set_volume(volume)
         snd.play()
+
+    def stop_snd (self, base_ID):
+        for snd in self.sounds.get(base_ID, []):
+            snd.stop()
+        self.sounds[base_ID] = []
 
     def find_music (self):
         """Store a list of music files."""
@@ -559,7 +563,7 @@ fade will not have any effect.
     def cancel_fade (self, persist = True):
         """Cancel any running fade on the current backend.
 
-Takes the persist argument taken by Game.fade.
+Takes the persist argument taken by Game.fade, defaults to True.
 
 """
         self.fading = False

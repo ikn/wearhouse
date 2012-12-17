@@ -49,12 +49,17 @@ class Level (object):
         self._win = False
         self._winning = False
         self._last_ident = self.ident
+        self._restart_timeout_id = None
 
     def _real_restart (self, *args):
+        self.game.cancel_fade(False)
+        if self._restart_timeout_id is not None:
+            self.game.scheduler.rm_timeout(self._restart_timeout_id)
+            self.game.stop_snd('die')
         self._restart = True
 
     def restart (self):
-        self.game.scheduler.add_timeout(self._real_restart, seconds = conf.RESTART_TIME)
+        self._restart_timeout_id = self.game.scheduler.add_timeout(self._real_restart, seconds = conf.RESTART_TIME)
         self.game.linear_fade(*conf.RESTART_FADE)
 
     def _real_win (self):

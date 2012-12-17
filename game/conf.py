@@ -84,7 +84,7 @@ class Conf (object):
     MUSIC_VOLUME = dd(.5) # per-backend
     SOUND_VOLUME = .5
     EVENT_ENDMUSIC = pg.USEREVENT
-    SOUND_VOLUMES = dd(1, jump = 1, step = .2, door = .5, lever = .5)
+    SOUND_VOLUMES = dd(1, jump = 1, step = .2, door = .8, lever = .5)
     # generate SOUNDS = {ID: num_sounds}
     SOUNDS = {}
     ss = glob(join_path(SOUND_DIR, '*.ogg'))

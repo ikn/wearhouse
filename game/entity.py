@@ -80,8 +80,6 @@ class Entity (object):
         if img_size is None:
             if ident in conf.IMG_SIZES:
                 img_size = conf.IMG_SIZES[ident]
-            elif ident in conf.SIZES:
-                img_size = conf.SIZES[ident]
             else:
                 img_size = imgs[initial_img].get_size()
         self.img_size = img_size
@@ -281,17 +279,21 @@ class MovingEntity (Entity):
         # image
         if dirn == 0:
             if self.walking:
+                # stop walking
                 self.walking = False
                 self.update_img()
                 self.stop_anim()
         else:
-            if not self.walking or self.dirn != dirn:
-                self.dirn = dirn
+            old_dirn = self.dirn
+            self.dirn = dirn
+            if not self.walking:
+                # start walking
                 self.walking = True
                 self.update_img()
                 self.start_anim()
-            else:
-                self.dirn = dirn
+            if old_dirn != dirn:
+                # change direction
+                self.update_img()
 
 
 class Player (MovingEntity):

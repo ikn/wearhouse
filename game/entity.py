@@ -365,12 +365,8 @@ class Enemy (MovingEntity):
         if self.dead:
             return isinstance(e, SolidRect)
         if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
-            # only catch player if overlap in y by more than a little
-            y0 = self.rect[1]
-            y1 = y0 + self.rect[3]
-            py0 = e.rect[1]
-            py1 = py0 + e.rect[3]
-            if min(y1 - py0, py1 - y0) >= conf.MIN_CATCH_Y_OVERLAP:
+            # don't catch player off the top corner
+            if e.rect[1] + e.rect[3] - self.rect[1] >= conf.MIN_CATCH_Y_OVERLAP:
                 e.die()
             return True
         if solid(e):
@@ -385,12 +381,49 @@ class Enemy (MovingEntity):
             self.dead = True
             self.level.game.play_snd('zap')
 
-    def dist (self, rect):
+    def dist (self, other_pos):
         pos = self.rect.center
-        other_pos = rect.center
         dx = other_pos[0] - pos[0]
         dy = (other_pos[1] - pos[1])
         return ((pos, other_pos), (dx, dy), (dx * dx + dy * dy) ** .5)
+
+    def can_see (self, pos, dist_data = None):
+        if dist_data is None:
+            dist_data = self.dist(pos)
+        ((lx0, ly0), (lx1, ly1)), dp, dist = dist_data
+        if lx0 > lx1:
+            lx0, lx1 = lx1, lx0
+        if ly0 > ly1:
+            ly0, ly1 = ly1, ly0
+        vert = dp[0] == 0
+        if vert:
+            c = lx0
+        else:
+            m = float(ly1 - ly0) / (lx1 - lx0)
+            c = ly0 - m * lx0
+        los = True
+        for r in self.level.solid:
+            x0, y0, w, h = r.rect
+            x1, y1 = x0 + w, y0 + h
+            if vert:
+                if x0 < c < x1 and ly0 < y0 < ly1:
+                    los = False
+                    break
+            else:
+                if m != 0:
+                    if x0 < (y0 - c) / m < x1 and ly0 < y0 < ly1:
+                        los = False
+                        break
+                    if x0 < (y1 - c) / m < x1 and ly0 < y1 < ly1:
+                        los = False
+                        break
+                if y0 < m * x0 + c < y1 and lx0 < x0 < lx1:
+                    los = False
+                    break
+                if y0 < m * x1 + c < y1 and lx0 < x1 < lx1:
+                    los = False
+                    break
+        return los
 
     def _move_towards (self, dp):
         if abs(dp[0]) > conf.STOP_SEEK_NEAR:
@@ -405,44 +438,15 @@ class Enemy (MovingEntity):
             return
         # AI
         self._los_time -= 1
-        player = self.level.player
-        if player.villain:
+        if self.level.player.villain:
             self._seeking = False
         else:
-            ((lx0, ly0), (lx1, ly1)), dp, dist = self.dist(player.rect)
             # check if can see player
-            if lx0 > lx1:
-                lx0, lx1 = lx1, lx0
-            if ly0 > ly1:
-                ly0, ly1 = ly1, ly0
-            vert = dp[0] == 0
-            if vert:
-                c = lx0
-            else:
-                m = float(ly1 - ly0) / (lx1 - lx0)
-                c = ly0 - m * lx0
-            los = True
-            for r in self.level.solid:
-                x0, y0, w, h = r.rect
-                x1, y1 = x0 + w, y0 + h
-                if vert:
-                    if x0 < c < x1 and ly0 < y0 < ly1:
-                        los = False
-                        break
-                else:
-                    if m != 0:
-                        if x0 < (y0 - c) / m < x1 and ly0 < y0 < ly1:
-                            los = False
-                            break
-                        if x0 < (y1 - c) / m < x1 and ly0 < y1 < ly1:
-                            los = False
-                            break
-                    if y0 < m * x0 + c < y1 and lx0 < x0 < lx1:
-                        los = False
-                        break
-                    if y0 < m * x1 + c < y1 and lx0 < x1 < lx1:
-                        los = False
-                        break
+            r = self.level.player.rect
+            ps, dp, dist = self.dist(r.center)
+            los = any(self.can_see(*args) for args in (
+                (r.center, (ps, dp, dist)), (r.midtop, None), (r.midbottom, None)
+            ))
             max_dist = conf.STOP_SEEK_FAR if self._seeking else conf.START_SEEK_NEAR
             if dist > max_dist:
                 los = False
@@ -458,5 +462,5 @@ class Enemy (MovingEntity):
             if self._seeking:
                 self._move_towards(dp)
         if not self._seeking:
-            (pos0, pos1), dp, dist = self.dist(self._initial_rect)
+            (pos0, pos1), dp, dist = self.dist(self._initial_rect.center)
             self._move_towards(dp)

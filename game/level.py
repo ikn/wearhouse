@@ -55,11 +55,12 @@ class Level (object):
         self._restart_timeout_id = None
 
     def _force_restart (self, *args):
-        if self._restart_timeout_id is not None:
-            self.game.cancel_fade(False)
-            self.game.scheduler.rm_timeout(self._restart_timeout_id)
-            self.game.stop_snd('die')
-        self._real_restart()
+        if not self._winning:
+            if self._restart_timeout_id is not None:
+                self.game.cancel_fade(False)
+                self.game.scheduler.rm_timeout(self._restart_timeout_id)
+                self.game.stop_snd('die')
+            self._real_restart()
 
     def _real_restart (self):
         self._restart = True

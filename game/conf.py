@@ -138,13 +138,13 @@ class Conf (object):
     MOVE_SPEED = {'player': 1, 'enemy': .5}
     MOVE_SPEED_AIR = {'player': .5, 'enemy': .1}
     JUMP_INITIAL = {'player': 4.5, 'enemy': 4.5}
-    JUMP_CONTINUE = {'player': 3, 'enemy': 2.5}
+    JUMP_CONTINUE = {'player': 2.8, 'enemy': 2.5}
     JUMP_TIME = {'player': 4, 'enemy': 4}
     # AI
     START_SEEK_NEAR = 200
     STOP_SEEK_FAR = 300
     STOP_SEEK_NEAR = 5
-    SEEK_TIME = 150
+    SEEK_TIME = 180
     MIN_CATCH_Y_OVERLAP = 3
     # timing/cutscenes
     START_FADE = ((0, 0, 0), (False, 1))
@@ -164,14 +164,13 @@ class Conf (object):
         'goal': (10, 12),
         'solid': [(0, 15, 48, 13), (0, 14, 23, 1), (0, 12, 15, 2)]
     }, {
-        'player': (23, 5),
-        'enemies': [(23, 8), (23, 10), (23, 15), (23, 17)],
-        'goal': (23, 20),
-        'solid': [(0, 0, 15, 27), (32, 0, 16, 27), (16, 5, 15, 2),
-                  (16, 7, 1, 2), (16, 10, 1, 6), (17, 17, 1, 3),
-                  (30, 8, 1, 6), (30, 15, 1, 5), (23, 8, 1, 1),
-                  (17, 10, 9, 4), (23, 15, 1, 1), (18, 17, 8, 1),
-                  (18, 24, 11, 1), (15, 25, 17, 2)]
+        'player': (20, 8),
+        'enemies': [(30, 8)],
+        'goal': (22, 17),
+        'solid': [(0, 0, 17, 27), (31, 0, 17, 27), (19, 8, 10, 1),
+                  (28, 0, 1, 4), (28, 6, 1, 2), (30, 8, 1, 1), (18, 8, 1, 7), (19, 10, 5, 1),
+                  (25, 10, 6, 1), (19, 12, 7, 1), (27, 12, 4, 1),
+                  (19, 14, 6, 1), (26, 14, 5, 1), (17, 21, 14, 6)]
     }, {
         'player': (22, 16),
         'enemies': [(29, 16), (31, 19), (35, 17), (37, 16)],

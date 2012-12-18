@@ -370,6 +370,7 @@ class Enemy (MovingEntity):
             py1 = py0 + e.rect[3]
             if min(y1 - py0, py1 - y0) >= conf.MIN_CATCH_Y_OVERLAP:
                 e.die()
+            return True
         if solid(e):
             if axis == 0:
                 self._blocked = True

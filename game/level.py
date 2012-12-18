@@ -28,12 +28,15 @@ class Level (object):
     def init (self):
         data = conf.LEVELS[self.ident]
         if self._last_ident != self.ident:
-            # don't reinitialise if on the same level so random tiles don't change
-            entity.BG(self, (0, 0) + conf.BG_SIZE).draw(self.bg)
+            # don't reinitialise bg/solid rects if on the same level so random tiles don't change
             self.changers = [entity.Changer(self, pos) for pos in data.get('changers', [])]
             self.barriers = bs = [entity.Barrier(self, r) for r in data.get('barriers', [])]
             self.goal = entity.Goal(self, data['goal'])
+            # draw tiles (solid and nonsolid) to bg image for speed
+            entity.BG(self, (0, 0) + conf.BG_SIZE).draw(self.bg)
             self.solid = [entity.SolidRect(self, r) for r in data.get('solid', [])]
+            for r in self.solid:
+                r.draw(self.bg)
         else:
             bs = self.barriers
             for b in bs:
@@ -95,8 +98,6 @@ class Level (object):
         rects = []
         if self.dirty:
             screen.blit(self.bg, (0, 0))
-            for e in self.solid:
-                e.draw(screen)
         else:
             for e in self.moving:
                 for r in e.dirty_rect():

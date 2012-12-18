@@ -105,16 +105,32 @@ class Conf (object):
     REQUIRED_FONTS = dd({})
 
     # graphics
-    IMG_OFFSETS = dd((0, 0), changer = (-1, 0))
-    BG_TILE_SIZE = 15
-    BG_SIZE = (64, 36)
     BARRIER_COLOUR = (255, 100, 100, 120)
+    BARRIER_DEFLATE = 2 # on each axis, on each side
+    IMGS = {
+        'player': ('left', 'right', 'walkleft', 'walkright', 'villainleft',
+                   'villainright', 'villainwalkleft', 'villainwalkright'),
+        'enemy': ('left', 'right'),
+        'switch': ('on', 'off')
+    }
+    IMG_SIZES = {'player': (20, 37)}
+    IMG_OFFSETS = dd((0, 0), {
+        'player': (-5, -1),
+        'changer': (-1, 0),
+        'barrier': (-BARRIER_DEFLATE, -BARRIER_DEFLATE)
+    })
+    ANIMATION_TIMES = {'player': dd(5), 'enemy': dd(5), 'goal': {'': 10}}
+    # tiled images
+    TILE_SIZES = {'bg': 15}
+    TILED_IMG_FREQS = dd((1, .8, .05, .1, .07, .1, .07, .02))
+    BG_SIZE = (64, 36)
 
     # gameplay
     TILE_SIZE = 20
     LEVEL_SIZE = (48, 27)
-    SIZES = {'player': (20, 37), 'enemy': (16, 18), 'changer': (20, 40),
+    SIZES = {'player': (10, 36), 'enemy': (16, 18), 'changer': (20, 40),
              'switch': (20, 20), 'goal': (20, 40)}
+    SOLID_ENTITIES = ('player', 'enemy', 'solidrect')
     # movement
     GRAVITY = .8 # making this much smaller breaks on_ground
     AIR_RESISTANCE = (.9, .8)

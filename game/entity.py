@@ -5,21 +5,21 @@ from util import ir, scale_up, weighted_rand, dd
 
 
 def solid (e):
-    return e.__class__ in SOLID_ES and not (hasattr(e, 'dead') and e.dead)
+    if hasattr(e, 'ident') and e.ident in conf.SOLID_ENTITIES:
+        return not (hasattr(e, 'dead') and e.dead)
+    return isinstance(e, pg.Rect)
 
 
 class Rect (object):
     def __init__ (self, level, rect):
-        self.ident = self.__class__.__name__.lower()
+        self.ident = ident = self.__class__.__name__.lower()
         self.level = level
-        if not hasattr(self, 'tile_size'):
-            self.tile_size = conf.TILE_SIZE
-        ts = self.tile_size
+        self.tile_size = ts = conf.TILE_SIZES.get(ident, conf.TILE_SIZE)
         self.rect = pg.Rect(scale_up(rect, ts))
         # load images and generate tilemap
         imgs = {}
-        for i, weighting in enumerate(self.img_freqs):
-            imgs[level.game.img('{0}{1}.png'.format(self.ident, i))] = weighting
+        for i, weighting in enumerate(conf.TILED_IMG_FREQS[ident]):
+            imgs[level.game.img('{0}{1}.png'.format(ident, i))] = weighting
         w, h = self.rect.size
         self.img_map = img_map = []
         for x in xrange(w / ts):
@@ -40,48 +40,56 @@ class Rect (object):
 
 
 class BG (Rect):
-    tile_size = conf.BG_TILE_SIZE
-    img_freqs = (1, .8, .05, .1, .07, .1, .07, .02)
+    pass
 
 
 class SolidRect (Rect):
-    img_freqs = BG.img_freqs
+    pass
 
 
 class Entity (object):
-    img_rect = None
-    imgs = ('',)
-    img = ''
-    anims = {}
-
-    def __init__ (self, level, pos, size = None, img = None):
-        self.ident = self.__class__.__name__.lower()
+    def __init__ (self, level, pos, size = None, img_size = None, imgs = None,
+                  aligned = False):
+        # imgs is list of (img_name, sfc) if given
+        self.ident = ident = self.__class__.__name__.lower()
         self.level = level
         pos = scale_up(pos)
         if size is None:
-            size = conf.SIZES[self.ident]
+            size = conf.SIZES[ident]
+        if not aligned:
             ts = conf.TILE_SIZE
             # move to centre of bottom edge of lower tile
             overlap = size[0] % ts
             if overlap != 0:
                 pos[0] += (ts - overlap) / 2
             pos[1] -= size[1]
-        self.draw_rect = self.rect = pg.Rect(pos, size)
+        self.rect = pg.Rect(pos, size)
         # load images
-        imgs = {}
-        if img is None:
-            for ext in self.imgs:
-                img = level.game.img(self.ident + ('-' if ext else '') + ext + '.png')
+        if imgs is None:
+            imgs = {}
+            img_names = conf.IMGS.get(ident, ('',))
+            initial_img = img_names[0]
+            for ext in img_names:
+                img = level.game.img(ident + ('-' if ext else '') + ext + '.png')
                 imgs[ext] = img
         else:
-            imgs[self.img] = img
+            initial_img = imgs[0][0]
+            imgs = dict(imgs)
         self.imgs = imgs
-        self.offset = conf.IMG_OFFSETS[self.ident]
-        if self.img_rect is None:
-            self.img_rect = self.imgs[self.img].get_rect()
+        # drawing stuff
+        if img_size is None:
+            if ident in conf.IMG_SIZES:
+                img_size = conf.IMG_SIZES[ident]
+            elif ident in conf.SIZES:
+                img_size = conf.SIZES[ident]
+            else:
+                img_size = imgs[initial_img].get_size()
+        self.img_size = img_size
+        self.img_offset = conf.IMG_OFFSETS[ident]
+        self.update_draw_rect()
         self.anim_offset = 0
         self.anim = False
-        self.dirty = False
+        self.set_img(initial_img)
 
     def set_img (self, img):
         self.img = img
@@ -100,8 +108,8 @@ class Entity (object):
         if self.anim_offset != 0:
             self.anim_offset = 0
             self.dirty = True
-        t = self.anims[self.img]
-        self._n_frames = self.imgs[self.img].get_width() / self.img_rect.width
+        t = conf.ANIMATION_TIMES[self.ident][self.img]
+        self._n_frames = self.imgs[self.img].get_width() / self.draw_rect.width
         self._anim_timer = self.level.game.scheduler.add_timeout(self._anim_cb, frames = t)
         self._repeat = n
 
@@ -117,19 +125,26 @@ class Entity (object):
         self.dirty = True
         return True
 
+    def update_draw_rect (self):
+        self.draw_rect = pg.Rect(self.rect.move(self.img_offset)[:2], self.img_size)
+
     def draw (self, screen):
-        r = self.img_rect.move(self.anim_offset * self.img_rect.width, 0)
-        screen.blit(self.imgs[self.img], self.rect.move(self.offset), r)
+        anim_pos = (self.anim_offset * self.draw_rect.width, 0)
+        img_rect = pg.Rect(anim_pos, self.img_size)
+        screen.blit(self.imgs[self.img], self.draw_rect, img_rect)
 
 
 class Barrier (Entity):
     def __init__ (self, level, rect):
-        size = scale_up(rect[2:])
-        img = pg.Surface(size).convert_alpha()
+        deflate = conf.BARRIER_DEFLATE
+        img_size = scale_up(rect[2:])
+        size = (img_size[0] - 2 * deflate, img_size[1] - 2 * deflate)
+        img = pg.Surface(img_size).convert_alpha()
         img.fill(conf.BARRIER_COLOUR)
-        Entity.__init__(self, level, rect[:2], size, img)
+        Entity.__init__(self, level, rect[:2], size, img_size, [('', img)], True)
+        self.rect.move_ip(deflate, deflate)
+        self.update_draw_rect()
         self.on = True
-        self.dirty = False
 
     def toggle (self):
         self.on = not self.on
@@ -145,9 +160,6 @@ class Changer (Entity):
 
 
 class Switch (Entity):
-    imgs = ('on', 'off')
-    img = 'on'
-
     def __init__ (self, level, pos, barrier):
         Entity.__init__(self, level, pos)
         self.barrier = barrier
@@ -163,8 +175,8 @@ class Switch (Entity):
 
 
 class Goal (Entity):
-    img_rect = pg.Rect(0, 0, 20, 40)
-    anims = {'': 10}
+    def __init__ (self, level, pos):
+        Entity.__init__(self, level, pos, img_size = conf.SIZES['goal'])
 
 
 class MovingEntity (Entity):
@@ -238,7 +250,7 @@ class MovingEntity (Entity):
                 self.jumping = False
 
     def dirty_rect (self):
-        return (self.rect, self._old_rect)
+        return (self.draw_rect, self._old_draw_rect)
 
     def update (self):
         # jumping
@@ -263,8 +275,9 @@ class MovingEntity (Entity):
                 self.level.game.play_snd('hit', conf.SOUND_VOLUMES['step'])
         # pos
         self.on_ground = False
-        self._old_rect = self.rect.copy()
+        self._old_draw_rect = self.draw_rect.copy()
         self.move_by(v)
+        self.update_draw_rect()
         # image
         if dirn == 0:
             if self.walking:
@@ -282,12 +295,6 @@ class MovingEntity (Entity):
 
 
 class Player (MovingEntity):
-    imgs = ('left', 'right', 'walkleft', 'walkright', 'villainleft',
-            'villainright', 'villainwalkleft', 'villainwalkright')
-    img = 'left'
-    anims = dd(5)
-    img_rect = pg.Rect(0, 0, 20, 40)
-
     def __init__ (self, level, pos):
         MovingEntity.__init__(self, level, pos)
         self.villain = False
@@ -298,6 +305,19 @@ class Player (MovingEntity):
         self.set_img(('villain' if self.villain else '') + \
                      ('walk' if self.walking else '') + \
                      ('left' if self.dirn == -1 else 'right'))
+
+    def collide (self, e, axis, dirn):
+        if self.dead:
+            return isinstance(e, SolidRect)
+        MovingEntity.collide(self, e, axis, dirn)
+        if solid(e):
+            return True
+        elif isinstance(e, Barrier) and e.on and not self.villain:
+            self.die()
+        elif isinstance(e, Goal) and not self.dead:
+            # stop moving
+            self.dead = True
+            self.level.win()
 
     def move (self, dirn, held):
         if self.dead:
@@ -323,26 +343,8 @@ class Player (MovingEntity):
             self.level.restart()
             self.level.game.play_snd('die')
 
-    def collide (self, e, axis, dirn):
-        if self.dead:
-            return isinstance(e, SolidRect)
-        MovingEntity.collide(self, e, axis, dirn)
-        if solid(e):
-            return True
-        elif isinstance(e, Barrier) and e.on and not self.villain:
-            self.die()
-        elif isinstance(e, Goal) and not self.dead:
-            # stop moving
-            self.dead = True
-            self.level.win()
-
 
 class Enemy (MovingEntity):
-    imgs = ('left', 'right')
-    img = 'left'
-    anims = dd(5)
-    img_rect = pg.Rect(0, 0, 16, 18)
-
     def __init__ (self, level, pos):
         MovingEntity.__init__(self, level, pos)
         self.colour = (255, 255, 255)
@@ -449,6 +451,3 @@ class Enemy (MovingEntity):
         if not self._seeking:
             (pos0, pos1), dp, dist = self.dist(self._initial_rect)
             self._move_towards(dp)
-
-
-SOLID_ES = (Player, Enemy, SolidRect, pg.Rect)

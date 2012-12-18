@@ -103,7 +103,7 @@ class Level (object):
                     rects.append(r)
             for e in self.nonsolid:
                 if e.dirty:
-                    rects.append(e.rect)
+                    rects.append(e.draw_rect)
                     e.dirty = False
             for r in rects:
                 screen.blit(self.bg, r, r)

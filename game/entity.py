@@ -401,29 +401,23 @@ class Enemy (MovingEntity):
         else:
             m = float(ly1 - ly0) / (lx1 - lx0)
             c = ly0 - m * lx0
-        los = True
         for r in self.level.solid:
             x0, y0, w, h = r.rect
             x1, y1 = x0 + w, y0 + h
             if vert:
-                if x0 < c < x1 and ly0 < y0 < ly1:
-                    los = False
-                    break
+                if x0 <= c <= x1 and (ly0 <= y0 <= ly1 or ly0 <= y1 <= ly1):
+                    return False
             else:
                 if m != 0:
-                    if x0 < (y0 - c) / m < x1 and ly0 < y0 < ly1:
-                        los = False
-                        break
-                    if x0 < (y1 - c) / m < x1 and ly0 < y1 < ly1:
-                        los = False
-                        break
-                if y0 < m * x0 + c < y1 and lx0 < x0 < lx1:
-                    los = False
-                    break
-                if y0 < m * x1 + c < y1 and lx0 < x1 < lx1:
-                    los = False
-                    break
-        return los
+                    if x0 <= (y0 - c) / m <= x1 and ly0 <= y0 <= ly1:
+                        return False
+                    if x0 <= (y1 - c) / m <= x1 and ly0 <= y1 <= ly1:
+                        return False
+                if y0 <= m * x0 + c <= y1 and lx0 <= x0 <= lx1:
+                    return False
+                if y0 <= m * x1 + c <= y1 and lx0 <= x1 <= lx1:
+                    return False
+        return True
 
     def _move_towards (self, dp):
         if abs(dp[0]) > conf.STOP_SEEK_NEAR:

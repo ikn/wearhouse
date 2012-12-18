@@ -6,7 +6,7 @@ from util import ir, scale_up, weighted_rand, dd
 
 def solid (e):
     if hasattr(e, 'ident') and e.ident in conf.SOLID_ENTITIES:
-        return not (hasattr(e, 'dead') and e.dead)
+        return not (e.ident == 'enemy' and e.dead)
     return isinstance(e, pg.Rect)
 
 
@@ -307,14 +307,14 @@ class Player (MovingEntity):
                      ('left' if self.dirn == -1 else 'right'))
 
     def collide (self, e, axis, dirn):
-        if self.dead:
-            return isinstance(e, SolidRect)
         MovingEntity.collide(self, e, axis, dirn)
+        if self.dead:
+            return solid(e)
         if solid(e):
             return True
         elif isinstance(e, Barrier) and e.on and not self.villain:
             self.die()
-        elif isinstance(e, Goal) and not self.dead:
+        elif isinstance(e, Goal):
             # stop moving
             self.dead = True
             self.level.win()
@@ -359,12 +359,12 @@ class Enemy (MovingEntity):
         self.set_img('left' if self.dirn == -1 else 'right')
 
     def collide (self, e, axis, dirn):
+        MovingEntity.collide(self, e, axis, dirn)
         if self.dead:
             return isinstance(e, SolidRect)
-        MovingEntity.collide(self, e, axis, dirn)
         if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
             e.die()
-        elif solid(e):
+        if solid(e):
             if axis == 0:
                 self._blocked = True
             return True

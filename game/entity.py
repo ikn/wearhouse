@@ -363,7 +363,13 @@ class Enemy (MovingEntity):
         if self.dead:
             return isinstance(e, SolidRect)
         if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
-            e.die()
+            # only catch player if overlap in y by more than a little
+            y0 = self.rect[1]
+            y1 = y0 + self.rect[3]
+            py0 = e.rect[1]
+            py1 = py0 + e.rect[3]
+            if min(y1 - py0, py1 - y0) >= conf.MIN_CATCH_Y_OVERLAP:
+                e.die()
         if solid(e):
             if axis == 0:
                 self._blocked = True

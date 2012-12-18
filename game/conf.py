@@ -145,6 +145,7 @@ class Conf (object):
     STOP_SEEK_FAR = 300
     STOP_SEEK_NEAR = 5
     SEEK_TIME = 150
+    MIN_CATCH_Y_OVERLAP = 3
     # timing/cutscenes
     START_FADE = ((0, 0, 0), (False, 1))
     RESTART_TIME = 1
@@ -183,11 +184,11 @@ class Conf (object):
     }, {
         'player': (17, 10),
         'enemies': [(18, 7)],
-        'changers': [(31, 7)],
+        'changers': [(30, 8)],
         'goal': (30, 20),
         'solid': [(0, 0, 16, 27), (32, 0, 16, 27), (16, 7, 9, 1),
                   (17, 10, 9, 8), (27, 9, 5, 9),
-                  (28, 8, 4, 1), (29, 7, 3, 1), (26, 15, 1, 3),
+                  (28, 8, 4, 1), (26, 15, 1, 3),
                   (16, 24, 16, 3)]
     }, {
         'player': (15, 15),

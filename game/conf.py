@@ -108,7 +108,7 @@ class Conf (object):
     BARRIER_COLOUR = (255, 100, 100, 120)
     BARRIER_DEFLATE = 2 # on each axis, on each side
     IMGS = {
-        'player': ('left', 'right', 'walkleft', 'walkright', 'villainleft',
+        'player': ('right', 'left', 'walkleft', 'walkright', 'villainleft',
                    'villainright', 'villainwalkleft', 'villainwalkright'),
         'enemy': ('left', 'right'),
         'switch': ('on', 'off')
@@ -180,14 +180,15 @@ class Conf (object):
                   (13, 19, 23, 8), (36, 16, 12, 11), (16, 16, 14, 1),
                   (33, 18, 3, 1), (34, 17, 2, 1)]
     }, {
-        'player': (19, 10),
-        'enemies': [(18, 7)],
-        'changers': [(30, 8), (25, 24)],
-        'barriers': [(16, 15, 1, 3)],
-        'goal': (30, 20),
-        'solid': [(0, 0, 16, 27), (32, 0, 16, 27), (16, 7, 9, 1), (16, 10, 1, 5),
-                  (17, 17, 1, 1), (18, 10, 1, 6), (19, 10, 7, 8), (27, 9, 5, 9), (28, 8, 4, 1), (26, 15, 1, 3),
-                  (16, 24, 16, 3)]
+        'player': (20, 10),
+        'enemies': [(17, 7), (19, 7)],
+        'changers': [(26, 9), (14, 23)],
+        'barriers': [(13, 10, 1, 7)],
+        'goal': (28, 19),
+        'solid': [(0, 0, 13, 27), (35, 0, 13, 27), (13, 23, 22, 4),
+                  (13, 7, 9, 1), (14, 10, 3, 7), (17, 10, 1, 5),
+                  (18, 16, 1, 1), (19, 10, 15, 7), (24, 9, 4, 1),
+                  (29, 8, 6, 1), (18, 21, 1, 2)]
     }, {
         'player': (15, 15),
         'enemies': [(34, 15)],

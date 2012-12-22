@@ -379,9 +379,10 @@ volume: float to scale volume by.
         # store sound, and stop oldest if necessary
         mx = conf.MAX_SOUNDS[base_ID]
         playing = self.sounds.setdefault(base_ID, [])
-        if mx is not None and len(playing) >= mx:
-            playing.pop(0).stop()
-        playing.append(snd)
+        if mx is not None:
+            if len(playing) >= mx:
+                playing.pop(0).stop()
+            playing.append(snd)
         # play
         volume *= conf.SOUND_VOLUME * conf.SOUND_VOLUMES[base_ID]
         snd.set_volume(volume)

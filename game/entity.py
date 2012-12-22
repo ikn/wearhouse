@@ -391,16 +391,16 @@ class Enemy (MovingEntity):
         if dist_data is None:
             dist_data = self.dist(pos)
         ((lx0, ly0), (lx1, ly1)), dp, dist = dist_data
-        if lx0 > lx1:
-            lx0, lx1 = lx1, lx0
-        if ly0 > ly1:
-            ly0, ly1 = ly1, ly0
         vert = dp[0] == 0
         if vert:
             c = lx0
         else:
             m = float(ly1 - ly0) / (lx1 - lx0)
             c = ly0 - m * lx0
+        if lx0 > lx1:
+            lx0, lx1 = lx1, lx0
+        if ly0 > ly1:
+            ly0, ly1 = ly1, ly0
         for r in self.level.solid:
             x0, y0, w, h = r.rect
             x1, y1 = x0 + w, y0 + h

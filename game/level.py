@@ -1,7 +1,7 @@
 import pygame as pg
 
 from conf import conf
-from util import scale_up
+from util import scale_up, position_sfc
 import entity
 from game.ext import evthandler as eh
 
@@ -16,7 +16,7 @@ class Level (object):
             (conf.KEYS_RIGHT, [(self._move, (2,))], eh.MODE_HELD),
             (conf.KEYS_USE, [(self._move, (3,))], eh.MODE_ONDOWN),
             (conf.KEYS_RESET, self._force_restart, eh.MODE_ONDOWN),
-            (conf.KEYS_BACK, lambda *args: game.quit_backend(), eh.MODE_ONDOWN)
+            (conf.KEYS_BACK, self.pause, eh.MODE_ONDOWN)
         ])
         self.ident = ident
         self.rect = pg.Rect((0, 0), [conf.TILE_SIZE * x for x in conf.LEVEL_SIZE])
@@ -80,6 +80,9 @@ class Level (object):
             self.game.play_snd('door')
             self.goal.start_anim(0)
 
+    def pause (self, *args):
+        self.game.start_backend(Paused, pg.display.get_surface())
+
     def _move (self, k, t, m, dirn, held = True):
         self.player.move(dirn, held)
 
@@ -140,6 +143,31 @@ class End:
     def draw (self, screen):
         if self.dirty:
             screen.blit(self.bg, (0, 0))
+            self.dirty = False
+            return True
+        else:
+            return False
+
+
+class Paused:
+    def __init__ (self, game, event_handler, sfc):
+        event_handler.add_key_handlers([
+            (conf.KEYS_BACK, lambda *args: game.quit_backend(), eh.MODE_ONDOWN),
+            (conf.KEYS_QUIT, lambda *args: game.quit_backend(2), eh.MODE_ONDOWN)
+        ])
+        sfc = sfc.copy()
+        dim_sfc = pg.Surface(conf.RES).convert_alpha()
+        dim_sfc.fill(conf.PAUSE_DIM)
+        sfc.blit(dim_sfc, (0, 0))
+        position_sfc(game.img('paused.png'), sfc)
+        self.sfc = sfc.convert()
+
+    def update (self):
+        pass
+
+    def draw (self, screen):
+        if self.dirty:
+            screen.blit(self.sfc, (0, 0))
             self.dirty = False
             return True
         else:

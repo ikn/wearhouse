@@ -77,6 +77,7 @@ class Conf (object):
     KEYS_USE = (pg.K_DOWN, pg.K_s, pg.K_o, pg.K_LCTRL, pg.K_LSHIFT, pg.K_RCTRL,
                 pg.K_RSHIFT, pg.K_z, pg.K_x, pg.K_c)
     KEYS_RESET = (pg.K_r, pg.K_p)
+    KEYS_QUIT = (pg.K_q,)
 
     # audio
     MUSIC_AUTOPLAY = False # just pauses music
@@ -155,6 +156,7 @@ class Conf (object):
     WIN_FADE = (False, (False, .5), ((0, 0, 0), 1), ((0, 0, 0), 1.5), (False, 2))
     END_TIME = 1
     END_FADE = (False, ((0, 0, 0), 1))
+    PAUSE_DIM = (0, 0, 0, 150)
 
     # levels
     # y positions are the tile beneath the object (what it's standing on)

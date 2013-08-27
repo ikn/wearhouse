@@ -391,42 +391,7 @@ class Enemy (MovingEntity):
         pos = self.rect.center
         dx = other_pos[0] - pos[0]
         dy = other_pos[1] - pos[1]
-        return ((pos, other_pos), (dx, dy), (dx * dx + dy * dy) ** .5)
-
-    def can_see (self, pos, dist_data = None):
-        return True
-
-        # enables robot line-of-sight
-        #if dist_data is None:
-            #dist_data = self.dist(pos)
-        #((lx0, ly0), (lx1, ly1)), dp, dist = dist_data
-        #vert = dp[0] == 0
-        #if vert:
-            #c = lx0
-        #else:
-            #m = float(ly1 - ly0) / (lx1 - lx0)
-            #c = ly0 - m * lx0
-        #if lx0 > lx1:
-            #lx0, lx1 = lx1, lx0
-        #if ly0 > ly1:
-            #ly0, ly1 = ly1, ly0
-        #for r in self.level.solid:
-            #x0, y0, w, h = r.rect
-            #x1, y1 = x0 + w, y0 + h
-            #if vert:
-                #if x0 <= c <= x1 and (ly0 <= y0 <= ly1 or ly0 <= y1 <= ly1):
-                    #return False
-            #else:
-                #if m != 0:
-                    #if x0 <= (y0 - c) / m <= x1 and ly0 <= y0 <= ly1:
-                        #return False
-                    #if x0 <= (y1 - c) / m <= x1 and ly0 <= y1 <= ly1:
-                        #return False
-                #if y0 <= m * x0 + c <= y1 and lx0 <= x0 <= lx1:
-                    #return False
-                #if y0 <= m * x1 + c <= y1 and lx0 <= x1 <= lx1:
-                    #return False
-        #return True
+        return ((dx, dy), (dx * dx + dy * dy) ** .5)
 
     def _move_towards (self, dp):
         if abs(dp[0]) > conf.STOP_SEEK_NEAR:
@@ -440,30 +405,34 @@ class Enemy (MovingEntity):
         if self.dead:
             return
         # AI
-        self._los_time -= 1
+        if self._los_time:
+            self._los_time -= 1
         if self.level.player.villain:
             self._seeking = False
+            self._los_time = 0
         else:
             # check if can see player
-            r = self.level.player.rect
-            ps, dp, dist = self.dist(r.center)
-            los = any(self.can_see(*args) for args in (
-                (r.center, (ps, dp, dist)), (r.midtop, None), (r.midbottom, None)
-            ))
-            max_dist = conf.STOP_SEEK_FAR if self._seeking else conf.START_SEEK_NEAR
-            if dist > max_dist:
-                los = False
-            if los:
-                self._los_time = conf.SEEK_TIME
+            player_pos = self.level.player.rect.center
+            dp, dist = self.dist(player_pos)
+            max_dist = (conf.STOP_SEEK_FAR if self._seeking
+                        else conf.START_SEEK_NEAR)
+            los = dist <= max_dist
             # determine whether to chase the player
             if self._seeking:
-                if self._los_time <= 0:
-                    self._seeking = False
-            elif dist <= conf.START_SEEK_NEAR and los:
+                seeking = los
+            else:
+                seeking = dist <= conf.START_SEEK_NEAR and los
+            if seeking and not self._los_time:
                 self.level.game.play_snd('alert-guard')
-                self._seeking = True
-            if self._seeking:
-                self._move_towards(dp)
-        if not self._seeking:
-            (pos0, pos1), dp, dist = self.dist(self._initial_rect.center)
+            if los:
+                self._los_time = conf.SEEK_TIME
+                self._last_seen = player_pos
+            self._seeking = seeking
+        if self._los_time:
+            if not self._seeking:
+                # can't see the player any more: aim for last known location
+                dp = self.dist(self._last_seen)[0]
+            self._move_towards(dp)
+        else:
+            dp, dist = self.dist(self._initial_rect.center)
             self._move_towards(dp)

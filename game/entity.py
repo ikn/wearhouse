@@ -197,7 +197,7 @@ class MovingEntity (Entity):
     def collide (self, e, axis, dirn):
         if solid(e):
             if axis == 1 and dirn == 1:
-                self.on_ground = True
+                self.on_ground = e.ident
             return True
 
     def move_by (self, dp):
@@ -231,10 +231,12 @@ class MovingEntity (Entity):
     def run (self, dirn):
         self._to_move[dirn] = 1
 
-    def jump (self, held):
+    def jump (self, held=None):
+        if held is None:
+            held = self.jumping
         if not held and not self.jumping and self.on_ground:
             # start jumping
-            self.vel[1] -= conf.JUMP_INITIAL[self.ident]
+            self.vel[1] -= conf.JUMP_INITIAL[self.ident] * conf.JUMP_BOOST[self.on_ground]
             self.jumping = True
             self._jump_time = conf.JUMP_TIME[self.ident]
             self._jumped = True
@@ -252,6 +254,8 @@ class MovingEntity (Entity):
 
     def update (self):
         # jumping
+        if self.on_ground in conf.BOUNCY:
+            self.jump()
         if self.jumping and not self._jumped:
             self.jumping = False
         self._jumped = False
@@ -424,7 +428,7 @@ class Enemy (MovingEntity):
         if abs(dp[0]) > conf.STOP_SEEK_NEAR:
             self.run(dp[0] > 0)
         if self._blocked or self.jumping:
-            self.jump(self.jumping)
+            self.jump()
 
     def update (self):
         self._blocked = False

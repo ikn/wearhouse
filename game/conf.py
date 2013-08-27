@@ -141,6 +141,8 @@ class Conf (object):
     JUMP_INITIAL = {'player': 4.5, 'enemy': 4.5}
     JUMP_CONTINUE = {'player': 2.8, 'enemy': 2.5}
     JUMP_TIME = {'player': 4, 'enemy': 4}
+    JUMP_BOOST = dd(1, enemy=2)
+    BOUNCY = ('enemy',)
     # AI
     START_SEEK_NEAR = 200
     STOP_SEEK_FAR = 300

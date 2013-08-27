@@ -364,11 +364,12 @@ class Enemy (MovingEntity):
         MovingEntity.collide(self, e, axis, dirn)
         if self.dead:
             return isinstance(e, SolidRect)
-        if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
-            # don't catch player off the top corner
-            if e.rect[1] + e.rect[3] - self.rect[1] >= conf.MIN_CATCH_Y_OVERLAP:
-                e.die()
-            return True
+        # makes player die from robots
+        #if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
+            ## don't catch player off the top corner
+            #if e.rect[1] + e.rect[3] - self.rect[1] >= conf.MIN_CATCH_Y_OVERLAP:
+                #e.die()
+            #return True
         if solid(e):
             if axis == 0:
                 self._blocked = True
@@ -384,7 +385,7 @@ class Enemy (MovingEntity):
     def dist (self, other_pos):
         pos = self.rect.center
         dx = other_pos[0] - pos[0]
-        dy = (other_pos[1] - pos[1])
+        dy = other_pos[1] - pos[1]
         return ((pos, other_pos), (dx, dy), (dx * dx + dy * dy) ** .5)
 
     def can_see (self, pos, dist_data = None):

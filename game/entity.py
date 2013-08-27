@@ -234,7 +234,7 @@ class MovingEntity (Entity):
     def jump (self, held=None):
         if held is None:
             held = self.jumping
-        if not held and not self.jumping and self.on_ground:
+        if not self.jumping and self.on_ground:
             # start jumping
             self.vel[1] -= conf.JUMP_INITIAL[self.ident] * conf.JUMP_BOOST[self.on_ground]
             self.jumping = True

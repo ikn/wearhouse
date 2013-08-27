@@ -80,8 +80,9 @@ class Level (object):
             self.game.play_snd('door')
             self.goal.start_anim(0)
 
-    def pause (self, *args):
-        self.game.start_backend(Paused, pg.display.get_surface())
+    def pause (self, key, mode, mods):
+        self.game.start_backend(Paused, pg.display.get_surface(),
+                                mods & pg.KMOD_SHIFT)
 
     def _move (self, k, t, m, dirn, held = True):
         self.player.move(dirn, held)
@@ -150,16 +151,17 @@ class End:
 
 
 class Paused:
-    def __init__ (self, game, event_handler, sfc):
+    def __init__ (self, game, event_handler, sfc, secret):
         event_handler.add_key_handlers([
             (conf.KEYS_BACK, lambda *args: game.quit_backend(), eh.MODE_ONDOWN),
             (conf.KEYS_QUIT, lambda *args: game.quit_backend(2), eh.MODE_ONDOWN)
         ])
         sfc = sfc.copy()
-        dim_sfc = pg.Surface(conf.RES).convert_alpha()
-        dim_sfc.fill(conf.PAUSE_DIM)
-        sfc.blit(dim_sfc, (0, 0))
-        position_sfc(game.img('paused.png'), sfc)
+        if not secret:
+            dim_sfc = pg.Surface(conf.RES).convert_alpha()
+            dim_sfc.fill(conf.PAUSE_DIM)
+            sfc.blit(dim_sfc, (0, 0))
+            position_sfc(game.img('paused.png'), sfc)
         self.sfc = sfc.convert()
 
     def update (self):

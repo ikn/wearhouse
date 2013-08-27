@@ -197,7 +197,7 @@ class MovingEntity (Entity):
     def collide (self, e, axis, dirn):
         if solid(e):
             if axis == 1 and dirn == 1:
-                self.on_ground = e.ident
+                self.on_ground = e.ident if hasattr(e, 'ident') else 'rect'
             return True
 
     def move_by (self, dp):

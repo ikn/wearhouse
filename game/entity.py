@@ -254,8 +254,9 @@ class MovingEntity (Entity):
 
     def update (self):
         # jumping
-        if self.on_ground in conf.BOUNCY:
-            self.jump()
+        # enables autobounce
+        #if self.on_ground in conf.BOUNCY:
+            #self.jump()
         if self.jumping and not self._jumped:
             self.jumping = False
         self._jumped = False
@@ -368,7 +369,7 @@ class Enemy (MovingEntity):
         MovingEntity.collide(self, e, axis, dirn)
         if self.dead:
             return isinstance(e, SolidRect)
-        # makes player die from robots
+        # enables player dying from robots
         #if isinstance(e, Player) and (axis == 0 or dirn == 1) and not e.villain:
             ## don't catch player off the top corner
             #if e.rect[1] + e.rect[3] - self.rect[1] >= conf.MIN_CATCH_Y_OVERLAP:
@@ -393,36 +394,39 @@ class Enemy (MovingEntity):
         return ((pos, other_pos), (dx, dy), (dx * dx + dy * dy) ** .5)
 
     def can_see (self, pos, dist_data = None):
-        if dist_data is None:
-            dist_data = self.dist(pos)
-        ((lx0, ly0), (lx1, ly1)), dp, dist = dist_data
-        vert = dp[0] == 0
-        if vert:
-            c = lx0
-        else:
-            m = float(ly1 - ly0) / (lx1 - lx0)
-            c = ly0 - m * lx0
-        if lx0 > lx1:
-            lx0, lx1 = lx1, lx0
-        if ly0 > ly1:
-            ly0, ly1 = ly1, ly0
-        for r in self.level.solid:
-            x0, y0, w, h = r.rect
-            x1, y1 = x0 + w, y0 + h
-            if vert:
-                if x0 <= c <= x1 and (ly0 <= y0 <= ly1 or ly0 <= y1 <= ly1):
-                    return False
-            else:
-                if m != 0:
-                    if x0 <= (y0 - c) / m <= x1 and ly0 <= y0 <= ly1:
-                        return False
-                    if x0 <= (y1 - c) / m <= x1 and ly0 <= y1 <= ly1:
-                        return False
-                if y0 <= m * x0 + c <= y1 and lx0 <= x0 <= lx1:
-                    return False
-                if y0 <= m * x1 + c <= y1 and lx0 <= x1 <= lx1:
-                    return False
         return True
+
+        # enables robot line-of-sight
+        #if dist_data is None:
+            #dist_data = self.dist(pos)
+        #((lx0, ly0), (lx1, ly1)), dp, dist = dist_data
+        #vert = dp[0] == 0
+        #if vert:
+            #c = lx0
+        #else:
+            #m = float(ly1 - ly0) / (lx1 - lx0)
+            #c = ly0 - m * lx0
+        #if lx0 > lx1:
+            #lx0, lx1 = lx1, lx0
+        #if ly0 > ly1:
+            #ly0, ly1 = ly1, ly0
+        #for r in self.level.solid:
+            #x0, y0, w, h = r.rect
+            #x1, y1 = x0 + w, y0 + h
+            #if vert:
+                #if x0 <= c <= x1 and (ly0 <= y0 <= ly1 or ly0 <= y1 <= ly1):
+                    #return False
+            #else:
+                #if m != 0:
+                    #if x0 <= (y0 - c) / m <= x1 and ly0 <= y0 <= ly1:
+                        #return False
+                    #if x0 <= (y1 - c) / m <= x1 and ly0 <= y1 <= ly1:
+                        #return False
+                #if y0 <= m * x0 + c <= y1 and lx0 <= x0 <= lx1:
+                    #return False
+                #if y0 <= m * x1 + c <= y1 and lx0 <= x1 <= lx1:
+                    #return False
+        #return True
 
     def _move_towards (self, dp):
         if abs(dp[0]) > conf.STOP_SEEK_NEAR:

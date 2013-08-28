@@ -16,7 +16,7 @@ class Level (object):
             (conf.KEYS_RIGHT, [(self._move, (2,))], eh.MODE_HELD),
             (conf.KEYS_USE, [(self._move, (3,))], eh.MODE_ONDOWN),
             (conf.KEYS_RESET, self._force_restart, eh.MODE_ONDOWN),
-            (conf.KEYS_BACK, self.pause, eh.MODE_ONDOWN)
+            (conf.KEYS_BACK, self._pause_cb, eh.MODE_ONDOWN)
         ])
         self.ident = ident
         self.rect = pg.Rect((0, 0), [conf.TILE_SIZE * x for x in conf.LEVEL_SIZE])
@@ -80,9 +80,11 @@ class Level (object):
             self.game.play_snd('door')
             self.goal.start_anim(0)
 
-    def pause (self, key, mode, mods):
-        self.game.start_backend(Paused, pg.display.get_surface(),
-                                mods & pg.KMOD_SHIFT)
+    def pause (self, secret=False):
+        self.game.start_backend(Paused, pg.display.get_surface(), secret)
+
+    def _pause_cb (self, key, mode, mods):
+        self.pause(mods & pg.KMOD_SHIFT)
 
     def _move (self, k, t, m, dirn, held = True):
         self.player.move(dirn, held)

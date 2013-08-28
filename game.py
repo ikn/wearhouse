@@ -741,24 +741,18 @@ if __name__ == '__main__':
         # profile
         from cProfile import run
         from pstats import Stats
-        if len(argv) >= 3:
-            t = int(argv[2])
-        else:
-            t = conf.DEFAULT_PROFILE_TIME
+        t = int(argv[2]) if len(argv) >= 3 else conf.DEFAULT_PROFILE_TIME
         t *= conf.FPS[None]
         fn = conf.PROFILE_STATS_FILE
         run('Game(Level).run(t)', fn, locals())
         Stats(fn).strip_dirs().sort_stats('cumulative').print_stats(20)
         os.unlink(fn)
     else:
-        if len(argv) >= 2:
-            level = int(argv[1])
-        else:
-            level = 0
+        level = int(argv[1]) if len(argv) >= 2 else 1
         # run normally
         restarting = True
         while restarting:
             restarting = False
-            Game(Level, level).run()
+            Game(Level, level - 1).run()
 
 pg.quit()

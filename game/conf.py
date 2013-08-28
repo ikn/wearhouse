@@ -144,6 +144,7 @@ class Conf (object):
     JUMP_TIME = {'player': 4, 'enemy': 65}
     JUMP_BOOST = dd(1, enemy=2)
     BOUNCY = ('enemy',)
+    AUTOJUMP_COOLDOWN = {'player': 40, 'enemy': 100}
     # AI
     START_SEEK_NEAR = 200
     STOP_SEEK_FAR = 250

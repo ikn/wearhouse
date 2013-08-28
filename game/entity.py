@@ -189,6 +189,7 @@ class MovingEntity (Entity):
         self.jumping = False
         self._jump_time = 0
         self._jumped = False
+        self._autojump_cooldown = 0
         self._step_snd_counter = 0
         self._extra_collide_es = []
         self.dirn = -1
@@ -231,11 +232,13 @@ class MovingEntity (Entity):
     def run (self, dirn):
         self._to_move[dirn] = 1
 
-    def jump (self, held=None):
-        if held is None:
-            held = self.jumping
+    def jump (self, held=True):
         if not self.jumping and self.on_ground:
             # start jumping
+            if held and self._autojump_cooldown:
+                # this is an autojump, and can't autojump again yet
+                return
+            self._autojump_cooldown = conf.AUTOJUMP_COOLDOWN[self.ident]
             self.vel[1] -= conf.JUMP_INITIAL[self.ident] * conf.JUMP_BOOST[self.on_ground]
             self.jumping = True
             self._jump_time = conf.JUMP_TIME[self.ident]
@@ -260,6 +263,8 @@ class MovingEntity (Entity):
         if self.jumping and not self._jumped:
             self.jumping = False
         self._jumped = False
+        if self._autojump_cooldown:
+            self._autojump_cooldown -= 1
         # vel
         v = self.vel
         speed = conf.MOVE_SPEED[self.ident] if self.on_ground else conf.MOVE_SPEED_AIR[self.ident]

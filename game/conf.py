@@ -137,11 +137,11 @@ class Conf (object):
     GRAVITY = .8 # making this much smaller breaks on_ground
     AIR_RESISTANCE = (.9, .8)
     FRICTION = (.75, .9)
-    MOVE_SPEED = {'player': 1, 'enemy': .5}
-    MOVE_SPEED_AIR = {'player': .5, 'enemy': .1}
+    MOVE_SPEED = {'player': 1, 'enemy': .55}
+    MOVE_SPEED_AIR = {'player': .5, 'enemy': .25}
     JUMP_INITIAL = {'player': 4.5, 'enemy': 0}
     JUMP_CONTINUE = {'player': 2.8, 'enemy': .9}
-    JUMP_TIME = {'player': 4, 'enemy': 60}
+    JUMP_TIME = {'player': 4, 'enemy': 65}
     JUMP_BOOST = dd(1, enemy=2)
     BOUNCY = ('enemy',)
     # AI
@@ -231,12 +231,12 @@ class Conf (object):
                   (10, 18, 28, 1), (21, 14, 5, 4), (36, 17, 2, 1),
                   (37, 16, 1, 1)]
     }, {
-        'player': (14, 14),
-        'enemies': [(4, 14), (27, 14)],
-        'barriers': [(16, 12, 1, 2), (29, 10, 1, 4), (33, 10, 1, 4)],
+        'player': (14, 12),
+        'enemies': [(4, 12), (27, 14)],
+        'barriers': [(16, 10, 1, 2), (29, 9, 1, 5), (33, 9, 1, 5)],
         'switches': [((27, 13), 1), ((31, 10), 2)],
         'goal': (33, 19),
-        'solid': [(0, 0, 4, 27), (44, 0, 4, 27), (4, 14, 28, 5),
+        'solid': [(0, 0, 4, 27), (44, 0, 4, 27), (4, 12, 21, 2), (4, 14, 28, 5),
                   (4, 19, 44, 8), (32, 14, 3, 3), (35, 16, 1, 1),
                   (36, 14, 1, 1), (37, 14, 6, 3)]
     }, {
@@ -244,11 +244,11 @@ class Conf (object):
         'enemies': [(30, 11)],
         'changers': [(16, 15)],
         'barriers': [(14, 17, 15, 1)],
-        'goal': (32, 16),
+        'goal': (32, 15),
         'solid': [(0, 0, 14, 27), (34, 0, 14, 27), (14, 18, 20, 9),
                   (14, 11, 4, 1), (21, 11, 13, 1), (14, 15, 4, 1),
                   (20, 15, 6, 1), (27, 15, 2, 1), (29, 12, 1, 2),
-                  (31, 16, 3, 2)]
+                  (31, 15, 3, 3)]
     }]
 
 

@@ -1,178 +1,67 @@
 import pygame as pg
+from pygame import Rect
 
-from conf import conf
-from util import scale_up, position_sfc
-import entity
-from game.ext import evthandler as eh
+from .engine import conf, evt, gfx, util
+from .engine.game import World
 
+from .conf import Conf
+from . import entity
 
-class Level (object):
-    def __init__ (self, game, event_handler, ident = 0):
-        self.game = game
-        event_handler.add_key_handlers([
-            (conf.KEYS_LEFT, [(self._move, (0,))], eh.MODE_HELD),
-            (conf.KEYS_JUMP, [(self._move, (1, False))], eh.MODE_ONDOWN),
-            (conf.KEYS_JUMP, [(self._move, (1,))], eh.MODE_HELD),
-            (conf.KEYS_RIGHT, [(self._move, (2,))], eh.MODE_HELD),
-            (conf.KEYS_USE, [(self._move, (3,))], eh.MODE_ONDOWN),
-            (conf.KEYS_RESET, self._force_restart, eh.MODE_ONDOWN),
-            (conf.KEYS_BACK, self._pause_cb, eh.MODE_ONDOWN)
-        ])
-        self.ident = ident
-        self.rect = pg.Rect((0, 0), [conf.TILE_SIZE * x for x in conf.LEVEL_SIZE])
-        game.linear_fade(*conf.START_FADE)
-        self.bg = pg.Surface(conf.RES)
-        self._last_ident = None
-        self.init()
-
-    def init (self):
-        data = conf.LEVELS[self.ident]
-        if self._last_ident != self.ident:
-            # don't reinitialise bg/solid rects if on the same level so random tiles don't change
-            self.changers = [entity.Changer(self, pos) for pos in data.get('changers', [])]
-            self.barriers = bs = [entity.Barrier(self, r) for r in data.get('barriers', [])]
-            self.goal = entity.Goal(self, data['goal'])
-            # draw tiles (solid and nonsolid) to bg image for speed
-            entity.BG(self, (0, 0) + conf.BG_SIZE).draw(self.bg)
-            self.solid = [entity.SolidRect(self, r) for r in data.get('solid', [])]
-            for r in self.solid:
-                r.draw(self.bg)
-        else:
-            bs = self.barriers
-            for b in bs:
-                b.on = True
-        # switches have changeable state I can't be bothered to reset
-        self.switches = [entity.Switch(self, pos, bs[b]) for pos, b in data.get('switches', [])]
-        self.nonsolid = self.changers + self.barriers + self.switches + [self.goal]
-        self.player = entity.Player(self, data['player'])
-        self.enemies = [entity.Enemy(self, pos) for pos in data.get('enemies', [])]
-        self.moving = self.enemies + [self.player]
-        self.dirty = True
-        self._restart = False
-        self._win = False
-        self._winning = False
-        self._last_ident = self.ident
-        self._restart_timeout_id = None
-
-    def _force_restart (self, *args):
-        if not self._winning:
-            if self._restart_timeout_id is not None:
-                self.game.cancel_fade(False)
-                self.game.scheduler.rm_timeout(self._restart_timeout_id)
-                self.game.stop_snd('die')
-            self._real_restart()
-
-    def _real_restart (self):
-        self._restart = True
-
-    def restart (self):
-        self._restart_timeout_id = self.game.scheduler.add_timeout(self._real_restart, seconds = conf.RESTART_TIME)
-        self.game.linear_fade(*conf.RESTART_FADE)
-
-    def _real_win (self):
-        self._win = True
-
-    def win (self):
-        if not self._winning:
-            self._winning = True
-            self.game.scheduler.add_timeout(self._real_win, seconds = conf.WIN_TIME)
-            self.game.linear_fade(*conf.WIN_FADE)
-            self.game.play_snd('door')
-            self.goal.start_anim(0)
-
-    def pause (self, secret=False):
-        self.game.start_backend(Paused, pg.display.get_surface(), secret)
-
-    def _pause_cb (self, key, mode, mods):
-        self.pause(mods & pg.KMOD_SHIFT)
-
-    def _move (self, k, t, m, dirn, held = True):
-        self.player.move(dirn, held)
-
-    def update (self):
-        if self._restart:
-            self.init()
-        if self._win:
-            self.ident += 1
-            if self.ident == len(conf.LEVELS):
-                self.game.switch_backend(End)
-            else:
-                self.init()
-        for e in self.moving:
-            e.update()
-
-    def draw (self, screen):
-        rects = []
-        if self.dirty:
-            screen.blit(self.bg, (0, 0))
-        else:
-            for e in self.moving:
-                for r in e.dirty_rect():
-                    rects.append(r)
-            for e in self.nonsolid:
-                if e.dirty:
-                    rects.append(e.draw_rect)
-                    e.dirty = False
-            for r in rects:
-                screen.blit(self.bg, r, r)
-        for e in self.nonsolid + self.moving:
-            e.draw(screen)
-        if self.dirty:
-            self.dirty = False
-            return True
-        else:
-            return rects
+conf.add(Conf)
 
 
-class End:
-    def __init__ (self, game, event_handler):
-        self.game = game
-        self.bg = game.img('end.png')
-        event_handler.add_key_handlers([
-            (conf.KEYS_NEXT + conf.KEYS_BACK, self.restart, eh.MODE_ONDOWN)
-        ])
-        game.linear_fade(*conf.START_FADE)
+def mk_tilemap (ident, *rects, **kwargs):
+    # generate a random tilemap from an ident and rects, with keyword-only
+    # size=conf.RES
+    sfc_size = kwargs.get('size', conf.RES)
+    ts = conf.TILE_SIZE[ident]
+    assert sfc_size[0] % ts == 0 and sfc_size[1] % ts == 0
+    size = (sfc_size[0] / ts, sfc_size[1] / ts)
+    freqs = dict(('{0}{1}.png'.format(ident, i), freq)
+                 for i, freq in enumerate(conf.TILE_FREQS[ident]))
 
-    def _real_restart (self):
-        self.game.switch_backend(Level)
+    tile_data = [[None for j in xrange(size[1])] for i in xrange(size[0])]
+    for r in rects:
+        r = Rect(r)
+        for i in xrange(r.left, r.right):
+            for j in xrange(r.top, r.bottom):
+                tile_data[i][j] = util.weighted_rand(freqs)
 
-    def restart (self, *args):
-        self.game.linear_fade(*conf.END_FADE, persist = True)
-        self.game.scheduler.add_timeout(self._real_restart, seconds = conf.END_TIME)
+    return gfx.Tilemap(ts, tile_data)
 
-    def update (self):
+
+class Level (World):
+    def init (self, ident, bg=None, wall_graphic=None):
+        data = conf.LEVELS[ident]
+
+        # tilemaps (don't reinitialise if on the same level so random tiles
+        # don't change)
+        if bg is None:
+            ts = conf.TILE_SIZE['bg']
+            bg = mk_tilemap('bg',
+                            ((0, 0), (conf.RES[0] / ts, conf.RES[1] / ts)))
+            bg.layer = conf.LAYERS['bg']
+        self._bg = bg
+        if wall_graphic is None:
+            wall_graphic = mk_tilemap('wall', *data.get('walls', []))
+            wall_graphic.layer = conf.LAYERS['wall']
+        self._wall_graphic = wall_graphic
+        self.graphics.add(bg, wall_graphic)
+
+        # entities
+        self.player = entity.Player(data['player'])
+        enemies = [entity.Enemy(pos) for pos in data.get('enemies', [])]
+        self.goal = entity.Goal(data['goal'])
+        self.changers = [entity.Changer(pos)
+                         for pos in data.get('changers', ())]
+        self.barriers = bs = [entity.Barrier(r)
+                              for r in data.get('barriers', [])]
+        self.switches = [entity.Switch(pos, bs[b])
+                         for pos, b in data.get('switches', [])]
+        walls = [entity.Wall(r) for r in data.get('walls', [])]
+        self.solid = ([self.player] + enemies + walls)
+        self.add(self.player, enemies, self.goal, self.changers, self.barriers,
+                 self.switches)
+
+        # controls
         pass
-
-    def draw (self, screen):
-        if self.dirty:
-            screen.blit(self.bg, (0, 0))
-            self.dirty = False
-            return True
-        else:
-            return False
-
-
-class Paused:
-    def __init__ (self, game, event_handler, sfc, secret):
-        event_handler.add_key_handlers([
-            (conf.KEYS_BACK, lambda *args: game.quit_backend(), eh.MODE_ONDOWN),
-            (conf.KEYS_QUIT, lambda *args: game.quit_backend(2), eh.MODE_ONDOWN)
-        ])
-        sfc = sfc.copy()
-        if not secret:
-            dim_sfc = pg.Surface(conf.RES).convert_alpha()
-            dim_sfc.fill(conf.PAUSE_DIM)
-            sfc.blit(dim_sfc, (0, 0))
-            position_sfc(game.img('paused.png'), sfc)
-        self.sfc = sfc.convert()
-
-    def update (self):
-        pass
-
-    def draw (self, screen):
-        if self.dirty:
-            screen.blit(self.sfc, (0, 0))
-            self.dirty = False
-            return True
-        else:
-            return False

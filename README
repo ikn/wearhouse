@@ -1,23 +1,36 @@
-Wearhouse (release 2): a game made for Ludum Dare 25 (theme 'you are the
+Wearhouse (release 3-dev): a game made for Ludum Dare 25 (theme 'you are the
 villain'), a puzzle platformer about infiltrating the bad guy's warehouse
 hideout.  To help you do so, you can change your appearance to look like this
-bad guy, using his usefully-placed wardrobes.
+bad guy, using his conveniently-placed wardrobes.
 
 This version has some post-competition updates.
 
     DEPENDENCIES
 
-Python (2.6 or later 2.x)
+Python (2.6 or later 2.x, 3.2 or later 3.x)
 Pygame (1.8 or later, probably; tested with 1.9.1)
 
     RUNNING
 
-This should work wherever Pygame does.  On systems with a sh-compatible shell,
-do
+To run from source, you must first compile.  This process requires GNU Make or
+equivalent or the version of Visual whatever-it's-called that was used to
+compile your Python version, and header files for SDL and Pygame must be
+available on the system.  Just run
+
+    make
+
+On Windows, this requires the command-line compiler ('cl') to be on your path,
+and assumes that SDL.h is in the directory 'sdl_include' above this directory
+(horrible, I know).
+
+The makefile supports a 'PYTHON_VERSION' argument which can be 2 (default) or
+3, which determines which version to build for.
+
+Now, on systems with a sh-compatible shell, do
 
     ./run
 
-On other systems (Windows, for example), run game.py with your Python 2
+On other systems (Windows, for example), run run.py with your Python 2
 executable.
 
     PLAYING
@@ -28,11 +41,13 @@ Move around each level and try to get to the elevator to the next floor.
 
 arrow keys, WASD, space: move, jump, interact with objects
 R: reset current level
-F11, alt + enter: toggle fullscreen
+escape, backspace: pause
+q: quit when paused
 F10: minimise
-escape, backspace: quit
 
 WASD and R are in the same place in Dvorak too.
+
+You may also quit by closing the game window.
 
     LICENSING
 

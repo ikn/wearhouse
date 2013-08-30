@@ -25,6 +25,9 @@ Currently, an entity is just a container of graphics.
         #: containing the entity's graphics.
         self.graphics = GraphicsGroup(x, y)
 
+    def added (self):
+        pass
+
     def update (self):
         """Called every frame to makes any necessary changes."""
         pass

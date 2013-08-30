@@ -32,6 +32,7 @@ def mk_tilemap (ident, *rects, **kwargs):
 
 class Level (World):
     def init (self, ident, bg=None, wall_graphic=None):
+        self.rect = Rect((0, 0), conf.RES)
         data = conf.LEVELS[ident]
 
         # tilemaps (don't reinitialise if on the same level so random tiles
@@ -59,9 +60,15 @@ class Level (World):
         self.switches = [entity.Switch(pos, bs[b])
                          for pos, b in data.get('switches', [])]
         walls = [entity.Wall(r) for r in data.get('walls', [])]
-        self.solid = ([self.player] + enemies + walls)
+        self.bdy = entity.Boundary(self.rect)
+        self.solid = [self.player] + enemies + walls
+        self.moving = [self.player] + enemies
         self.add(self.player, enemies, self.goal, self.changers, self.barriers,
-                 self.switches)
+                 self.switches, walls, self.bdy)
 
         # controls
-        pass
+        eh = self.evthandler
+        eh.load('game')
+        eh['quit'].cb(lambda: conf.GAME.quit_world())
+        eh['walk'].cb(self.player.walk)
+        eh['use'].cb(self.player.use)

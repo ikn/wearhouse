@@ -162,9 +162,13 @@ Each entity passed may also be a sequence of entities to add.
                 if e.world is not None:
                     e.world.rm(e)
                 elif e.graphics.manager is not None:
-                    # has no world, so gm was explicitly set, so don't change it
-                    continue
-                e.graphics.manager = self.graphics
+                    # has no world, so manager was explicitly set, so don't
+                    # change it
+                    pass
+                else:
+                    e.graphics.manager = self.graphics
+                e.world = self
+                e.added()
 
     def rm (self, *entities):
         """Remove any number of entities from the world.
@@ -182,6 +186,7 @@ Each entity passed may also be a sequence of entities to remove.
             else:
                 if e in all_entities:
                     all_entities.remove(e)
+                e.world = None
                 # unset gm even if it's not this world's main manager
                 e.graphics.manager = None
 

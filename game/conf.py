@@ -1,12 +1,46 @@
+from .engine import conf
 from .engine.util import dd
 
 
 class Conf (object):
+    IDENT = 'wearhouse'
+    WINDOW_TITLE = 'Wearhouse'
+    WINDOW_ICON = conf.IMG_DIR + 'icon.png'
+
     # gameplay
     # collision
     ENTITY_SIZE = {'player': (10, 36), 'enemy': (16, 18), 'goal': (20, 40),
                    'changer': (20, 40), 'switch': (20, 20)}
-    SOLID_ENTITIES = dd(('player', 'enemy', 'wall'), deadenemy=('wall',))
+    SOLID_ENTITIES = dd(('player', 'wall', 'boundary'),
+                        deadenemy=('wall',))
+    # movement
+    GRAVITY = .8 # making this much smaller breaks on_ground
+    AIR_RESISTANCE = (.9, .8)
+    FRICTION = (.75, .9)
+    MOVE_SPEED = {'player': 1, 'enemy': .55}
+    MOVE_SPEED_AIR = {'player': .5, 'enemy': .25}
+    JUMP_INITIAL = {'player': 4.5, 'enemy': 0}
+    JUMP_CONTINUE = {'player': 2.8, 'enemy': .9}
+    JUMP_TIME = {'player': 4, 'enemy': 65}
+    JUMP_BOOST = dd(1, enemy=2)
+    BOUNCY = ('enemy',)
+    AUTOJUMP_COOLDOWN = {'player': 40, 'enemy': 100}
+    # AI
+    START_SEEK_NEAR = 200
+    STOP_SEEK_FAR = 250
+    STOP_SEEK_NEAR = 5
+    SEEK_TIME = 150
+
+    # audio
+    SOUND_VOLUMES = dd(1, {
+        'step': .2,
+        'jump': 1,
+        'die': .7,
+        'door': .8,
+        'lever': .5
+    })
+    STEP_SOUND_TIME = {'player': 15, 'enemy': 20}
+    MAX_SOUNDS = dd(None, change = 1, lever = 1)
 
     # graphics
     LAYERS = dd(0, {

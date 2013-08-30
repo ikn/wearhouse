@@ -246,8 +246,9 @@ Animation(imgs, pos=(0, 0), layer=0[, scheduler],
     form for this argument.
 :arg scheduler: :class:`sched.Scheduler <engine.sched.Scheduler>` instance to
                 use for timing; if not given, animations can only be played
-                when the graphic is contained by a manager (and trying to do so
-                otherwise raises ``RuntimeError``).
+                when the graphic is contained by a
+                :class:`GraphicsManager <engine.gfx.container.GraphicsManager>`
+                (and trying to do so otherwise raises ``RuntimeError``).
 
 Other arguments are as taken by :class:`Graphic <engine.gfx.graphic.Graphic>`.
 
@@ -284,7 +285,8 @@ For example, to play the frames in a spritemap consisting of a single row::
         self.sequences = {}
         self._frame_time = None
         self._speed = 1
-        self._scheduler = scheduler
+        #: The ``scheduler`` argument passed to the constructor.
+        self.scheduler = scheduler
 
         #: The currently playing sequence (name), or ``None``.
         self.playing = None
@@ -365,7 +367,7 @@ finished, if any.
         return sfc
 
     def _get_sched (self):
-        s = self._scheduler
+        s = self.scheduler
         if s is None:
             if self._manager is None:
                 raise RuntimeError('no scheduler is available')
@@ -393,8 +395,8 @@ add(name, *indices[, frame_time]) -> self
 :arg name: the name to give the sequence (any hashable object).  If a sequence
            with this name already exists, it is overwritten; if it is currently
            playing or queued, it is stopped/unqueued.
-:arg indices: sequence of indices in :attr:`graphics`, defining the sequence of
-              frames, or pass none for all frames in order.
+:arg indices: any number of indices in :attr:`graphics`, defining the sequence
+              of frames, or pass none for all frames in order.
 :arg frame_time: a default for the time between animation frames in seconds
                  whenever this sequence is played.  If not given, a value must
                  be defined either through the constructor or each time the

@@ -1,0 +1,38 @@
+#axis walk
+#    neg kbd LEFT
+#    pos kbd RIGHT
+#    neg kbd a
+#    pos kbd d
+#    neg pos pad axis 0
+#    # should capture mouse; last number is boundary: -100px < x < 100px
+#    neg pos mouse axis:2,3 100
+
+#button4 move HELD DOWN DBLCLICK .2
+#    left [SHIFT] mouse button LEFT
+#    right [CTRL] kbd RIGHT
+#    up kbd UP
+#    down kbd DOWN
+#    left right pad <x> axis 0 .6 .4
+
+#relaxis2 move
+#     left kbd LEFT
+#     right kbd RIGHT
+#     up kbd UP
+#     down kbd DOWN
+#     left right mouse axis:0,1
+#     up down mouse axis:2,3
+
+button quit DOWN
+    kbd ESCAPE
+
+button2 walk HELD
+    neg kbd LEFT
+    pos kbd RIGHT
+    neg kbd a
+    pos kbd d
+    pos kbd e
+
+button use DOWN
+    kbd DOWN
+    kbd s
+    kbd o

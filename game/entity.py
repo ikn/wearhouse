@@ -1,6 +1,7 @@
 import pygame as pg
 
 from .engine import conf, gfx, entity, util
+from .engine.evt import bmode
 from .engine.gfx.util import Spritemap
 
 
@@ -26,11 +27,13 @@ class Entity (entity.Entity):
             self.graphic.scheduler = self.world.scheduler
 
     def solid_to (self, e):
-        return self.ident in conf.SOLID_ENTITIES[e.ident]
+        if not isinstance(e, basestring):
+            e = e.ident
+        return self.ident in conf.SOLID_ENTITIES[e]
 
 
 class Rect (Entity):
-    # subclasses have .rect available in .init() (and may alter it)
+    # subclasses have .rect available in .init() (and may alter it there)
 
     def __init__ (self, rect, *args, **kwargs):
         rect = pg.Rect(rect)
@@ -83,6 +86,27 @@ class MovingEntity (NonRect):
         # handle both directions together when we update
         self._to_move[dirn] = 1
 
+    def jump (self, held=True):
+        if not self.jumping and self.on_ground:
+            # start jumping
+            if held and self._autojump_cooldown:
+                # this is an autojump, and can't autojump again yet
+                return
+            self._autojump_cooldown = conf.AUTOJUMP_COOLDOWN[self.ident]
+            self.vel[1] -= (conf.JUMP_INITIAL[self.ident] *
+                            conf.JUMP_BOOST[self.on_ground])
+            self.jumping = True
+            self._jump_time = conf.JUMP_TIME[self.ident]
+            self._jumped = True
+            conf.GAME.play_snd('hit', conf.SOUND_VOLUMES['jump'])
+        elif held and self.jumping and not self._jumped:
+            # continue jumping
+            self.vel[1] -= conf.JUMP_CONTINUE[self.ident]
+            self._jumped = True
+            self._jump_time -= 1
+            if self._jump_time <= 0:
+                self.jumping = False
+
     def collide (self, e, axis, dirn):
         # collision callback; axis is 0 or 1, dirn is -1 or 1; returns whether
         # to stop moving on this collision
@@ -129,6 +153,12 @@ class MovingEntity (NonRect):
         self.move_graphics(r.x - orig_x, r.y - orig_y)
 
     def update (self):
+        # jumping
+        if self.jumping and not self._jumped:
+            self.jumping = False
+        self._jumped = False
+        if self._autojump_cooldown:
+            self._autojump_cooldown -= 1
         # vel
         v = self.vel
         speed = (conf.MOVE_SPEED[self.ident]
@@ -148,7 +178,7 @@ class MovingEntity (NonRect):
             self._step_snd_counter -= 1
             if self._step_snd_counter <= 0:
                 self._step_snd_counter = conf.STEP_SOUND_TIME[self.ident]
-                conf.GAME.play_snd('hit', conf.SOUND_VOLUMES['step'])
+                conf.GAME.play_snd('hit', conf.SOUND_VOLUMES['walk'])
         # animation
         if dirn == 0:
             if self.walking:
@@ -190,7 +220,7 @@ class Player (MovingEntity):
         self._extra_collide_es = self.world.barriers + [self.world.goal]
 
     def update_graphics (self):
-        # change to the correct animation based on .walking/.dirn
+        # change to the correct animation based on /outfit/.walking/.dirn
         self.graphic.play(self.outfit + ('walk' if self.walking else '') +
                           ('left' if self.dirn == -1 else 'right'))
 
@@ -198,6 +228,11 @@ class Player (MovingEntity):
         if self.dead:
             return
         MovingEntity.walk(self, dirn)
+
+    def jump (self, evt):
+        if self.dead:
+            return
+        MovingEntity.jump(self, not evt[bmode.DOWN])
 
     def use (self, evt):
         # use nearby items
@@ -233,6 +268,11 @@ class Player (MovingEntity):
 
 class Enemy (MovingEntity):
     def init (self):
+        self.dead = False
+        self._seeking = False
+        self._los_time = 0
+        self._blocked = False
+
         self.graphic = g = gfx.Animation(
             list(Spritemap('enemy-left.png', 2)) +
             list(Spritemap('enemy-right.png', 2))
@@ -240,6 +280,85 @@ class Enemy (MovingEntity):
         g.add('left', 0).add('walkleft', 0, 1)
         g.add('right', 2).add('walkright', 2, 3)
         g.frame_time = conf.ANIMATION_TIMES[self.ident]
+
+    def added (self):
+        MovingEntity.added(self)
+        self._extra_collide_es = self.world.barriers
+        self._initial_pos = self.rect.center
+
+    def update_graphics (self):
+        # change to the correct animation based on .walking/.dirn
+        self.graphic.play(('walk' if self.walking else '') +
+                          ('left' if self.dirn == -1 else 'right'))
+
+    def collide (self, e, axis, dirn):
+        stopped = MovingEntity.collide(self, e, axis, dirn)
+        if self.dead:
+            return e.solid_to('deadenemy')
+        if stopped:
+            if axis == 0:
+                self._blocked = True
+            return True
+        elif e.ident == 'barrier' and e.on:
+            self.die()
+
+    def solid_to (self, e):
+        return MovingEntity.solid_to(self, e) and not self.dead
+
+    def die (self):
+        if not self.dead:
+            self.dead = True
+            conf.GAME.play_snd('zap')
+
+    def dist (self, other_pos):
+        pos = self.rect.center
+        dx = other_pos[0] - pos[0]
+        dy = other_pos[1] - pos[1]
+        return ((dx, dy), (dx * dx + dy * dy) ** .5)
+
+    def _move_towards (self, dp):
+        if abs(dp[0]) > conf.STOP_SEEK_NEAR:
+            self.walk(dp[0] > 0)
+        if self._blocked or self.jumping:
+            self.jump()
+
+    def update (self):
+        self._blocked = False
+        MovingEntity.update(self)
+        if self.dead:
+            return
+        # AI
+        if self._los_time:
+            self._los_time -= 1
+        if self.world.player.outfit == 'villain':
+            self._seeking = False
+            self._los_time = 0
+        else:
+            # check if can see player
+            player_pos = self.world.player.rect.center
+            dp, dist = self.dist(player_pos)
+            max_dist = (conf.STOP_SEEK_FAR if self._seeking
+                        else conf.START_SEEK_NEAR)
+            los = dist <= max_dist
+            # determine whether to chase the player
+            if self._seeking:
+                seeking = los
+            else:
+                seeking = dist <= conf.START_SEEK_NEAR and los
+            if seeking and not self._los_time:
+                conf.GAME.play_snd('alert-guard')
+            if los:
+                self._los_time = conf.SEEK_TIME
+                self._last_seen = player_pos
+            self._seeking = seeking
+        if self._los_time:
+            if not self._seeking:
+                # can't see the player any more: aim for last known location
+                dp = self.dist(self._last_seen)[0]
+            self._move_towards(dp)
+        else:
+            dp, dist = self.dist(self._initial_pos)
+            self._move_towards(dp)
 
 
 class Goal (NonRect):
@@ -249,6 +368,7 @@ class Goal (NonRect):
         g.frame_time = conf.ANIMATION_TIMES[self.ident]
 
     def open (self):
+        conf.GAME.play_snd('door')
         self.graphic.play('open', 0)
 
 

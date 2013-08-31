@@ -70,5 +70,5 @@ class Level (World):
         eh = self.evthandler
         eh.load('game')
         eh['quit'].cb(lambda: conf.GAME.quit_world())
-        eh['walk'].cb(self.player.walk)
-        eh['use'].cb(self.player.use)
+        for action in ('walk', 'jump', 'use'):
+            eh[action].cb(getattr(self.player, action))

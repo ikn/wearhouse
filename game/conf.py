@@ -11,7 +11,7 @@ class Conf (object):
     # collision
     ENTITY_SIZE = {'player': (10, 36), 'enemy': (16, 18), 'goal': (20, 40),
                    'changer': (20, 40), 'switch': (20, 20)}
-    SOLID_ENTITIES = dd(('player', 'wall', 'boundary'),
+    SOLID_ENTITIES = dd(('player', 'enemy', 'wall', 'boundary'),
                         deadenemy=('wall',))
     # movement
     GRAVITY = .8 # making this much smaller breaks on_ground
@@ -31,9 +31,20 @@ class Conf (object):
     STOP_SEEK_NEAR = 5
     SEEK_TIME = 150
 
+    # timing/cutscenes
+    START_FADE = ((0, 0, 0), (False, 1))
+    RESTART_TIME = 1
+    RESTART_FADE = (False, ((255, 255, 255), 1), ((255, 255, 255), 1.5),
+                    (False, 2))
+    WIN_TIME = 1
+    WIN_FADE = (False, (False, .5), ((0, 0, 0), 1), ((0, 0, 0), 1.5),
+                (False, 2))
+    END_TIME = 1
+    END_FADE = (False, ((0, 0, 0), 1))
+
     # audio
     SOUND_VOLUMES = dd(1, {
-        'step': .2,
+        'walk': .2,
         'jump': 1,
         'die': .7,
         'door': .8,
@@ -50,12 +61,13 @@ class Conf (object):
         'player': -2,
         'barrier': -3
     })
-    ANIMATION_TIMES = {'player': .08, 'enemy': .08, 'goal': .17}
+    ANIMATION_TIMES = {'player': .08, 'enemy': .08, 'goal': .25}
     TILE_SIZE = {'wall': 20, 'bg': 15}
     # {ident: freqs}
     TILE_FREQS = dd((1, .8, .05, .1, .07, .1, .07, .02))
     BARRIER_COLOUR = (255, 100, 100, 120)
     BARRIER_DEFLATE = 2 # on each axis, on each side
+    PAUSE_DIM = (0, 0, 0, 150)
 
     # levels
     # y positions are the tile beneath the object (what it's standing on)
@@ -104,16 +116,6 @@ class Conf (object):
         'walls': [(0, 15, 48, 12), (22, 0, 26, 13), (0, 0, 8, 15),
                   (40, 13, 8, 2)]
     }, {
-        'player': (33, 8),
-        'enemies': [(17, 7), (19, 7)],
-        'changers': [(26, 9), (14, 23)],
-        'barriers': [(28, 14, 1, 3), (18, 17, 1, 4)],
-        'goal': (10, 19),
-        'walls': [(0, 0, 10, 27), (35, 0, 13, 27), (10, 23, 25, 4),
-                  (10, 7, 12, 1), (10, 0, 12, 6), (10, 8, 7, 9), (17, 8, 1, 7),
-                  (18, 16, 10, 1), (19, 10, 15, 4), (29, 14, 5, 3),
-                  (24, 9, 4, 1), (29, 8, 6, 1), (18, 21, 1, 2)]
-    }, {
         'player': (31, 5),
         'enemies': [(21, 14), (25, 14)],
         'changers': [(26, 18)],
@@ -126,6 +128,16 @@ class Conf (object):
                   (32, 13, 1, 3), (33, 14, 1, 2), (34, 15, 1, 1),
                   (10, 18, 28, 1), (21, 14, 5, 4), (36, 17, 2, 1),
                   (37, 16, 1, 1)]
+    }, {
+        'player': (33, 8),
+        'enemies': [(17, 7), (19, 7)],
+        'changers': [(26, 9), (14, 23)],
+        'barriers': [(28, 14, 1, 3), (18, 17, 1, 4)],
+        'goal': (10, 19),
+        'walls': [(0, 0, 10, 27), (35, 0, 13, 27), (10, 23, 25, 4),
+                  (10, 7, 12, 1), (10, 0, 12, 6), (10, 8, 7, 9), (17, 8, 1, 7),
+                  (18, 16, 10, 1), (19, 10, 15, 4), (29, 14, 5, 3),
+                  (24, 9, 4, 1), (29, 8, 6, 1), (18, 21, 1, 2)]
     }, {
         'player': (14, 12),
         'enemies': [(4, 12), (27, 14)],

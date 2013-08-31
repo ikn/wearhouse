@@ -318,6 +318,7 @@ For example, to play the frames in a spritemap consisting of a single row::
 
     @graphic.setter
     def graphic (self, i):
+        i = int(i)
         if i == self._graphic:
             return
         self.orig_sfc = self._get_sfc(i)

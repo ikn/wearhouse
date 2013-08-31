@@ -1470,15 +1470,18 @@ class GraphicView (Graphic):
 
 GraphicView(graphic)
 
-:arg graphic: the :class:`Graphic` to provide a wrapper for.
+:arg graphic: the :class:`Graphic` (or subclass) instance to provide a wrapper
+              for.
 
 This is a wrapper around a graphic that allows assigning a different position
-and visibility (:attr:`Graphic.visible`, :attr:`Graphic.layer`) without
+and visibility (:attr:`Graphic.visible`, :attr:`Graphic.layer`, etc.) without
 affecting the original graphic (or any other wrappers).
 
 Changes to the image represented by either the wrapper or the original graphic
 affect both instances.  This includes both transformations and changes to the
 original surface.
+
+``graphic``'s class may not define a ``child`` property.
 
 """
 
@@ -1487,21 +1490,21 @@ original surface.
                     '_layer')
 
     def __init__ (self, graphic):
-        #: As taken by the constructor.
-        self.graphic = graphic
+        #: The ``graphic`` argument taken by the constructor.
+        self.child = graphic
         for attr in self._faked_attrs:
             setattr(self, attr, getattr(graphic, attr))
         self._manager = None
 
     def __getattr__ (self, attr):
         # existing attributes are returned without a call here
-        return getattr(self.graphic, attr)
+        return getattr(self.child, attr)
 
     def __setattr__ (self, attr, val):
         # set on this instance if this is an outer attribute or a property,
         # else set on the contained graphic
-        if (attr == 'graphic' or attr in self._faked_attrs or
+        if (attr == 'child' or attr in self._faked_attrs or
             hasattr(Graphic, attr)):
             Graphic.__setattr__(self, attr, val)
         else:
-            setattr(self.graphic, attr, val)
+            setattr(self.child, attr, val)

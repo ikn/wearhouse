@@ -69,6 +69,30 @@ class Level (World):
         # controls
         eh = self.evthandler
         eh.load('game')
-        eh['quit'].cb(lambda: conf.GAME.quit_world())
+        eh['pause'].cb(lambda: self.pause(False))
+        eh['secret_pause'].cb(lambda: self.pause(True))
+        eh['reset'].cb(self.reset)
         for action in ('walk', 'jump', 'use'):
             eh[action].cb(getattr(self.player, action))
+
+    def pause (self, secret=False):
+        conf.GAME.start_world(Paused, self.graphics.surface, secret)
+
+    def reset (self):
+        # TODO
+        pass
+
+
+class Paused (World):
+    def init (self, sfc, secret):
+        eh = self.evthandler
+        eh.load('paused')
+        eh['continue'].cb(lambda: conf.GAME.quit_world(1))
+        eh['quit'].cb(lambda: conf.GAME.quit_world(2))
+
+        self.graphics.add(gfx.Graphic(sfc.convert(), layer=1))
+        if not secret:
+            self.graphics.add(
+                gfx.Colour(conf.PAUSE_DIM, self.graphics.size),
+                gfx.Graphic('paused.png', layer=-1)
+            )[1].align()

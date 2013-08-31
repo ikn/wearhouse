@@ -132,6 +132,7 @@ This receives the extra arguments passed in constructing the world through the
             self.init(*self._extra_args[0], **self._extra_args[1])
             self._initialised = True
             del self._extra_args
+        self.evthandler.normalise_buttons()
         self.select()
 
     def quit (self):
@@ -389,7 +390,6 @@ should be passed to that base class).
         pg.mouse.set_visible(conf.MOUSE_VISIBLE[ident])
         pg.mixer.music.set_volume(conf.MUSIC_VOLUME[ident])
         world._select()
-        world.select()
 
     def start_world (self, *args, **kwargs):
         """Store the current world (if any) and switch to a new one.
@@ -542,7 +542,7 @@ play_snd(base_id, volume = 1)
 
     def _toggle_fullscreen (self, *args):
         # callback: keyboard shortcut pressed
-        if self.RESIZABLE:
+        if conf.RESIZABLE:
             self.toggle_fullscreen()
 
     def minimise (self):

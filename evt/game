@@ -1,5 +1,14 @@
-button quit DOWN
+button pause DOWN
     kbd ESCAPE
+    kbd BACKSPACE
+
+button secret_pause DOWN
+    [SHIFT] kbd ESCAPE
+    [SHIFT] kbd BACKSPACE
+
+button reset DOWN
+    kbd r
+    kbd p
 
 button2 walk HELD
     neg kbd LEFT
@@ -12,8 +21,24 @@ button jump DOWN HELD
     kbd UP
     kbd w
     kbd COMMA
+    kbd RETURN
+    kbd SPACE
+    kbd KP_ENTER
 
 button use DOWN
+    # wasd
     kbd DOWN
     kbd s
     kbd o
+    # mods
+    kbd LCTRL
+    kbd LSHIFT
+    kbd RCTRL
+    kbd RSHIFT
+    # zxc
+    kbd z
+    kbd SEMICOLON
+    kbd x
+    kbd q
+    kbd c
+    kbd j

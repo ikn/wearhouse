@@ -40,12 +40,15 @@ Move around each level and try to get to the elevator to the next floor.
     CONTROLS
 
 arrow keys, WASD, space: move, jump, interact with objects
+enter, space: also jump
+ctrl, shift, Z, X, C: also interact with objects
 R: reset current level
 escape, backspace: pause
-q: quit when paused
+escape, backspace, enter, space: continue when paused
+Q: quit when paused
 F10: minimise
 
-WASD and R are in the same place in Dvorak too.
+WASD, R and ZXC are in the same place in the Dvorak keyboard layout too.
 
 You may also quit by closing the game window.
 

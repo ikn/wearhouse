@@ -1,0 +1,9 @@
+button continue DOWN
+    kbd RETURN
+    kbd SPACE
+    kbd KP_ENTER
+    kbd ESCAPE
+    kbd BACKSPACE
+
+button quit DOWN
+    kbd q

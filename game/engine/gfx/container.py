@@ -406,13 +406,13 @@ Missing graphics are ignored.
             # else not added: fail silently
         self.layers = sorted(ls)
 
-    def fade_to (self, colour, t, resolution = None):
+    def fade_to (self, t, colour=(0, 0, 0), resolution = None):
         """Fade to a colour.
 
-fade_to(colour, t[, resolution])
+fade_to(t, colour=(0, 0, 0)[, resolution])
 
-:arg colour: the ``(R, G, B[, A = 255])`` colour to fade to.
 :arg t: how many seconds to take to reach ``colour``.
+:arg colour: the ``(R, G, B[, A = 255])`` colour to fade to.
 :arg resolution: as taken by
                  :meth:`Scheduler.interp() <engine.sched.Scheduler.interp>`.
 
@@ -431,21 +431,57 @@ the initial colour is taken to be ``(R, G, B, 0)`` for the given value of
         self.fade(sched.interp_linear(initial_colour, (colour, t)),
                   round_val = True, resolution = resolution)
 
+    def fade_from (self, t, colour=None, resolution = None):
+        """Fade from a colour to no overlay.
+
+fade_from(t[, colour][, resolution])
+
+:arg t: how many seconds to take to reach transparency.
+:arg colour: the ``(R, G, B[, A = 255])`` colour to fade from; if not given,
+             the current colour is used, else ``(0, 0, 0)``.
+:arg resolution: as taken by
+                 :meth:`Scheduler.interp() <engine.sched.Scheduler.interp>`.
+
+Any running fade is canceled, and the final colour is taken to be
+``(R, G, B, 0)`` for the given value of ``colour``.  After fading, the overlay
+is removed.
+
+"""
+        if colour is None:
+            if self._fade_id is None:
+                # doesn't already exist
+                colour = (0, 0, 0)
+            else:
+                colour = self._overlay.colour
+        colour = normalise_colour(colour)
+        final_colour = colour[:3] + (0,)
+
+        def end ():
+            self.cancel_fade()
+
+        self.fade(sched.interp_linear(colour, (final_colour, t)), end=end,
+                  round_val=True, resolution=resolution)
+
     def fade (self, get_val, *args, **kw):
         """Fade between colours.
 
-Takes arguments like :meth:`Scheduler.interp() <engine.sched.Scheduler.interp>`,
-with ``set_val`` omitted.
+Takes arguments like
+:meth:`Scheduler.interp() <engine.sched.Scheduler.interp>`, with ``set_val``
+omitted.
 
 Any currently running fade will be canceled.  After fading, the overlay
 persists; set :attr:`overlay` to ``None`` to remove it.
 
 """
-        if self._fade_id is None:
-            # doesn't already exist
-            self.overlay = Colour((0, 0, 0, 0), ((0, 0), self._rect.size))
-        else:
+        if self._fade_id is not None:
+            # already fading
             self.cancel_fade()
+        # set colour to initial colour
+        val = get_val(0)
+        if val is None:
+            # interpolation already ended
+            return
+        self.overlay = Colour(val, self.orig_size)
         self._fade_id = self.scheduler.interp(
             get_val, (self._overlay, 'colour'), *args, **kw
         )

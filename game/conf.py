@@ -32,15 +32,17 @@ class Conf (object):
     SEEK_TIME = 150
 
     # timing/cutscenes
-    START_FADE = ((0, 0, 0), (False, 1))
-    RESTART_TIME = 1
-    RESTART_FADE = (False, ((255, 255, 255), 1), ((255, 255, 255), 1.5),
-                    (False, 2))
+    START_FADE_IN = (1,)
+    DIE_FADE_OUT = (1, (255, 255, 255))
+    DIE_TIME = 1.5
+    DIE_FADE_IN = (.5, (255, 255, 255))
+    WIN_DELAY = .5
+    WIN_FADE_OUT = (.5,)
     WIN_TIME = 1
-    WIN_FADE = (False, (False, .5), ((0, 0, 0), 1), ((0, 0, 0), 1.5),
-                (False, 2))
-    END_TIME = 1
-    END_FADE = (False, ((0, 0, 0), 1))
+    END_FADE_IN = (1,)
+    END_INPUT_DELAY = 1
+    END_FADE_OUT = (1,)
+    END_CONTINUE_TIME = 1
 
     # audio
     SOUND_VOLUMES = dd(1, {

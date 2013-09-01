@@ -257,12 +257,12 @@ class Player (MovingEntity):
             # stop moving
             self.dead = True
             self.world.goal.open()
-            # TODO: self.world.win()
+            self.world.win()
 
     def die (self):
         if not self.dead:
             self.dead = True
-            # TODO: self.world.restart()
+            self.world.die()
             conf.GAME.play_snd('die')
 
 

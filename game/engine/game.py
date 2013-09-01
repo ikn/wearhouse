@@ -366,7 +366,7 @@ should be passed to that base class).
         eh['_game_minimise'].cb(self.minimise)
         eh['_game_fullscreen'].cb(self._toggle_fullscreen)
         # instantiate class
-        world = cls(scheduler, eh, self.resources, *args)
+        world = cls(scheduler, eh, self.resources, *args, **kwargs)
         scheduler.fps = conf.FPS[world.id]
         return world
 

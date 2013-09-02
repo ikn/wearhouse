@@ -15,7 +15,7 @@ def mk_tilemap (ident, *rects, **kwargs):
     sfc_size = kwargs.get('size')
     ts = conf.TILE_SIZE[ident]
     assert sfc_size[0] % ts == 0 and sfc_size[1] % ts == 0
-    size = (sfc_size[0] / ts, sfc_size[1] / ts)
+    size = (sfc_size[0] // ts, sfc_size[1] // ts)
     freqs = dict(('{0}{1}.png'.format(ident, i), freq)
                  for i, freq in enumerate(conf.TILE_FREQS[ident]))
 

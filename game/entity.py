@@ -21,11 +21,6 @@ class Entity (entity.Entity):
     def init (self):
         pass
 
-    def added (self):
-        # TODO: remove once GraphicView is fixed
-        if self.graphic is not None:
-            self.graphic.scheduler = self.world.scheduler
-
     def solid_to (self, e):
         if not isinstance(e, basestring):
             e = e.ident

@@ -440,7 +440,7 @@ add_multi(sequences) -> self
                 # got indices
                 indices = data
                 frame_time = None
-            self.add(name, *data)
+            self.add(name, *indices, frame_time=frame_time)
         return self
 
     def rm (self, *names):

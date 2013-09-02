@@ -20,5 +20,5 @@ clean:
 	find -regex 'game/engine/.*\.so' -delete
 
 distclean: clean
-	find -regex '\(.*/\)?\.py[co]' -delete
+	find -regex '.*\.py[co]' -delete
 	find -regex '\(.*/\)?__pycache__' -delete

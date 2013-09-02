@@ -29,7 +29,7 @@ try:
 except ImportError:
     print >> sys.stderr, 'error: couldn\'t import _gm; did you remember to `make\'?'
     sys.exit(1)
-from .graphic import Graphic, GraphicView
+from .graphic import Graphic
 from .graphics import Colour
 
 
@@ -42,7 +42,7 @@ Arguments determine the group's position (:attr:`pos`); unlike for graphics,
 this may be floating-point.
 
 This is a ``{graphic: rel}`` mapping, where ``graphic`` is a
-:class:`GraphicView <engine.gfx.graphic.GraphicView>` instance and ``rel`` is
+:class:`GraphicView <engine.gfx.graphic.Graphic.view>` instance and ``rel`` is
 the graphic's ``(x, y)`` position relative to this group.  Adding graphics is
 possible with something like ``group[graphic] = rel`` (instead of using
 :meth:`add`).
@@ -175,7 +175,7 @@ number of arguments which are ``(graphic, dx=0, dy=0)`` tuples or just
 :arg dx,dy: position relative to the group.
 
 :return: a list of created
-         :class:`GraphicView <engine.gfx.graphic.GraphicView>` instances that
+         :class:`GraphicView <engine.gfx.graphic.Graphic.view>` instances that
          point to the given ``graphic`` arguments.
 
 If any ``graphic`` was previously returned by this function, this call changes
@@ -219,9 +219,9 @@ using :attr:`manager`.
                 graphic = Graphic(graphic, pos)
             if not got:
                 # new graphic: create wrapper and add to graphics manager
-                if isinstance(graphic, GraphicView):
+                if graphic.is_view:
                     graphic = graphic.graphic
-                graphic = GraphicView(graphic)
+                graphic = graphic.view()
                 if self._manager is not None:
                     self._manager.add(graphic)
             # else already in graphics, in which case we still want to change its
@@ -355,6 +355,13 @@ previous overlay from the :class:`GraphicsManager`.
             # add to this manager
             self.add(overlay)
 
+    def _set_layers_from_set (self, ls):
+        if None in ls:
+            ls.remove(None)
+            self.layers = [None] + sorted(ls)
+        else:
+            self.layers = sorted(ls)
+
     def add (self, *graphics):
         """Add graphics.
 
@@ -376,7 +383,7 @@ and returns a list of added graphics.
             g._manager = self
             # don't draw over any possible previous location
             g.was_visible = False
-        self.layers = sorted(ls)
+        self._set_layers_from_set(ls)
         return graphics
 
     def rm (self, *graphics):
@@ -404,7 +411,7 @@ Missing graphics are ignored.
                         del all_graphics[l]
                         ls.remove(l)
             # else not added: fail silently
-        self.layers = sorted(ls)
+        self._set_layers_from_set(ls)
 
     def fade_to (self, t, colour=(0, 0, 0), resolution = None):
         """Fade to a colour.

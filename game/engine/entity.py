@@ -26,6 +26,11 @@ Currently, an entity is just a container of graphics.
         self.graphics = GraphicsGroup(x, y)
 
     def added (self):
+        """Called whenever the entity is added to a world.
+
+This is called after :attr:`world` has been changed to the new world.
+
+"""
         pass
 
     def update (self):

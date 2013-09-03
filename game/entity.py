@@ -211,7 +211,6 @@ class Player (MovingEntity):
             g.frame_time = conf.ANIMATION_TIMES[self.ident]
 
     def added (self):
-        MovingEntity.added(self)
         self._extra_collide_es = self.world.barriers + [self.world.goal]
 
     def update_graphics (self):
@@ -277,7 +276,6 @@ class Enemy (MovingEntity):
         g.frame_time = conf.ANIMATION_TIMES[self.ident]
 
     def added (self):
-        MovingEntity.added(self)
         self._extra_collide_es = self.world.barriers
         self._initial_pos = self.rect.center
 

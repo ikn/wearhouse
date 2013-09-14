@@ -70,11 +70,14 @@ class MovingEntity (NonRect):
         self.dirn = -1
         self._to_move = [0, 0]
         self.jumping = False
-        self._jump_time = 0
         self._jumped = False
-        self._autojump_cooldown = 0
         self._extra_collide_es = [] # non-solid entities to collide with
-        self._step_snd_counter = 0
+
+    def added (self):
+        C = self.world.scheduler.counter
+        self._can_step_snd = C(conf.STEP_SOUND_TIME[self.ident])
+        self._jump_finished = C(conf.JUMP_TIME[self.ident])
+        self._can_autojump = C(conf.AUTOJUMP_COOLDOWN[self.ident])
 
     def walk (self, dirn):
         # dirn is 0 (left) or 1 (right)
@@ -84,22 +87,21 @@ class MovingEntity (NonRect):
     def jump (self, held=True):
         if not self.jumping and self.on_ground:
             # start jumping
-            if held and self._autojump_cooldown:
+            if held and not self._can_autojump:
                 # this is an autojump, and can't autojump again yet
                 return
-            self._autojump_cooldown = conf.AUTOJUMP_COOLDOWN[self.ident]
+            self._can_autojump.reset()
             self.vel[1] -= (conf.JUMP_INITIAL[self.ident] *
                             conf.JUMP_BOOST[self.on_ground])
             self.jumping = True
-            self._jump_time = conf.JUMP_TIME[self.ident]
+            self._jump_finished.reset()
             self._jumped = True
             conf.GAME.play_snd('hit', conf.SOUND_VOLUMES['jump'])
         elif held and self.jumping and not self._jumped:
             # continue jumping
             self.vel[1] -= conf.JUMP_CONTINUE[self.ident]
             self._jumped = True
-            self._jump_time -= 1
-            if self._jump_time <= 0:
+            if self._jump_finished:
                 self.jumping = False
 
     def collide (self, e, axis, dirn):
@@ -152,8 +154,6 @@ class MovingEntity (NonRect):
         if self.jumping and not self._jumped:
             self.jumping = False
         self._jumped = False
-        if self._autojump_cooldown:
-            self._autojump_cooldown -= 1
         # vel
         v = self.vel
         speed = (conf.MOVE_SPEED[self.ident]
@@ -170,9 +170,8 @@ class MovingEntity (NonRect):
         self.move_by(v)
         # walk sound
         if dirn != 0 and self.on_ground:
-            self._step_snd_counter -= 1
-            if self._step_snd_counter <= 0:
-                self._step_snd_counter = conf.STEP_SOUND_TIME[self.ident]
+            if self._can_step_snd:
+                self._can_step_snd.reset()
                 conf.GAME.play_snd('hit', conf.SOUND_VOLUMES['walk'])
         # animation
         if dirn == 0:
@@ -211,6 +210,7 @@ class Player (MovingEntity):
             g.frame_time = conf.ANIMATION_TIMES[self.ident]
 
     def added (self):
+        MovingEntity.added(self)
         self._extra_collide_es = self.world.barriers + [self.world.goal]
 
     def update_graphics (self):
@@ -264,7 +264,6 @@ class Enemy (MovingEntity):
     def init (self):
         self.dead = False
         self._seeking = False
-        self._los_time = 0
         self._blocked = False
 
         self.graphic = g = gfx.Animation(
@@ -276,8 +275,10 @@ class Enemy (MovingEntity):
         g.frame_time = conf.ANIMATION_TIMES[self.ident]
 
     def added (self):
+        MovingEntity.added(self)
         self._extra_collide_es = self.world.barriers
         self._initial_pos = self.rect.center
+        self._lost = self.world.scheduler.counter(conf.SEEK_TIME)
 
     def update_graphics (self):
         # change to the correct animation based on .walking/.dirn
@@ -321,11 +322,9 @@ class Enemy (MovingEntity):
         if self.dead:
             return
         # AI
-        if self._los_time:
-            self._los_time -= 1
         if self.world.player.outfit == 'villain':
             self._seeking = False
-            self._los_time = 0
+            self._lost.finish()
         else:
             # check if can see player
             player_pos = self.world.player.rect.center
@@ -338,13 +337,13 @@ class Enemy (MovingEntity):
                 seeking = los
             else:
                 seeking = dist <= conf.START_SEEK_NEAR and los
-            if seeking and not self._los_time:
+            if seeking and self._lost:
                 conf.GAME.play_snd('alert-guard')
             if los:
-                self._los_time = conf.SEEK_TIME
+                self._lost.reset()
                 self._last_seen = player_pos
             self._seeking = seeking
-        if self._los_time:
+        if not self._lost:
             if not self._seeking:
                 # can't see the player any more: aim for last known location
                 dp = self.dist(self._last_seen)[0]

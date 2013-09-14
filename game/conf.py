@@ -21,10 +21,10 @@ class Conf (object):
     MOVE_SPEED_AIR = {'player': .5, 'enemy': .25}
     JUMP_INITIAL = {'player': 4.5, 'enemy': 0}
     JUMP_CONTINUE = {'player': 2.8, 'enemy': .9}
-    JUMP_TIME = {'player': 4, 'enemy': 65}
+    JUMP_TIME = {'player': .04, 'enemy': 1.1}
     JUMP_BOOST = dd(1, enemy=2)
     BOUNCY = ('enemy',)
-    AUTOJUMP_COOLDOWN = {'player': 40, 'enemy': 100}
+    AUTOJUMP_COOLDOWN = {'player': .6, 'enemy': 1.8}
     # AI
     START_SEEK_NEAR = 200
     STOP_SEEK_FAR = 250
@@ -52,7 +52,7 @@ class Conf (object):
         'door': .8,
         'lever': .5
     })
-    STEP_SOUND_TIME = {'player': 15, 'enemy': 20}
+    STEP_SOUND_TIME = {'player': .25, 'enemy': .35}
     MAX_SOUNDS = dd(None, change = 1, lever = 1)
 
     # graphics

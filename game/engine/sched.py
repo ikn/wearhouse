@@ -795,9 +795,8 @@ Counter(scheduler, t, autoreset=False)
                 the countdown ends.  This is only useful with :attr:`cbs` (the
                 finished state never becomes ``True``).
 
-When initialised, the countdown starts immediately.
-
 An instance is boolean ``True`` if the countdown has finished, else ``False``.
+The initial state is finished---use :meth:`reset` to start the countdown.
 
 See also :meth:`Scheduler.counter`.
 
@@ -811,8 +810,7 @@ See also :meth:`Scheduler.counter`.
         #: ``set`` of functions to call when the countdown ends.
         self.cbs = set()
         self._timer_id = None
-        self._finished = False
-        self.reset()
+        self._finished = True
 
     @property
     def t (self):
@@ -849,7 +847,9 @@ reset() -> self
 Starts counting down even if the countdown wasn't already running.
 
 """
-        self.cancel()
+        if self._timer_id is not None:
+            self._scheduler.rm_timeout(self._timer_id)
+        self._finished = False
         self._timer_id = self._scheduler.add_timeout(self._end_cb, self.t)
         return self
 
@@ -863,6 +863,16 @@ cancel() -> self
             self._scheduler.rm_timeout(self._timer_id)
             self._timer_id = None
             self._finished = False
+        return self
+
+    def finish (self):
+        """Stop counting down and set the finished state to ``True``.
+
+finish() -> self
+
+"""
+        self.cancel()
+        self._finished = True
         return self
 
     def cb (self, *cbs):

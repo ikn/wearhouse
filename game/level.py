@@ -94,13 +94,11 @@ class Level (World):
             return
         if died:
             # stop all sounds but the dying sound
-            # TODO
-            #conf.GAME.stop_snd('die', exclude=True)
+            self.stop_snds('die', exclude=True)
             pass
         else:
-            # manual reset while dying: stop all sounds
-            # TODO
-            #conf.GAME.stop_snd()
+            # manual reset, possibly while dying: stop all sounds
+            self.stop_snds()
             pass
         # don't regenerate tilemaps if on the same level so random tiles don't
         # change
@@ -132,7 +130,7 @@ class Level (World):
     def win (self):
         # progress with fade
         self._won = True
-        # wait for lift doors to open a little
+        # wait for lift doors to open a little first
         self.scheduler.add_timeout(self._real_win, conf.WIN_DELAY)
 
 

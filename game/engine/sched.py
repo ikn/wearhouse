@@ -798,6 +798,8 @@ Counter(scheduler, t, autoreset=False)
 An instance is boolean ``True`` if the countdown has finished, else ``False``.
 The initial state is finished---use :meth:`reset` to start the countdown.
 
+An instance is boolean ``True`` if the countdown has finished, else ``False``.
+
 See also :meth:`Scheduler.counter`.
 
 """

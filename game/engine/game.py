@@ -2,10 +2,11 @@
 
 Only one :class:`Game` instance should ever exist, and it stores itself in
 :data:`conf.GAME`.  Start the game with :func:`run` and use the :class:`Game`
-instance for changing worlds, handling the display and playing audio.
+instance for changing worlds and handling the display.
 
 """
 
+import sys
 import os
 from random import choice, randrange
 
@@ -85,6 +86,8 @@ World(scheduler, evthandler)
 
         self._initialised = False
         self._extra_args = (args, kwargs)
+        # {sound_id: [(sound, vol)]}, vol excluding the world's sound volume
+        self._sounds = {}
         self._avg_draw_time = scheduler.frame
         self._since_last_draw = 0
 
@@ -135,10 +138,72 @@ This receives the extra arguments passed in constructing the world through the
         self.evthandler.normalise_buttons()
         self.select()
 
+    def pause (self):
+        """Called to pause the game when the window loses focus."""
+        pass
+
+    def update (self):
+        """Called every frame to makes any necessary changes."""
+        pass
+
+    def _update (self):
+        """Called by the game to update."""
+        for e in self.entities:
+            e.update()
+        self.update()
+
+    def _handle_slowdown (self):
+        """Return whether to draw this frame."""
+        s = self.scheduler
+        elapsed = s.elapsed
+        if elapsed is None:
+            # haven't completed a frame yet
+            return True
+        frame_t = s.current_frame_time
+        target_t = s.frame
+        # compute rolling frame average for drawing, but don't store it just
+        # yet
+        r = conf.FPS_AVERAGE_RATIO
+        draw_t = ((1 - r) * self._avg_draw_time +
+                  r * (self._since_last_draw + elapsed))
+
+        if frame_t <= target_t or abs(frame_t - target_t) / target_t < .1:
+            # running at (near enough (within 1% of)) full speed, so draw
+            draw = True
+        else:
+            if draw_t >= 1. / conf.MIN_FPS[self.id]:
+                # not drawing would make the draw FPS too low, so draw anyway
+                draw = True
+            else:
+                draw = False
+        draw |= not conf.DROP_FRAMES
+        if draw:
+            # update rolling draw frame average
+            self._avg_draw_time = draw_t
+            self._since_last_draw = 0
+        else:
+            # remember frame time for when we next draw
+            self._since_last_draw += elapsed
+        return draw
+
+    def draw (self):
+        """Draw to the screen.
+
+:return: a flag indicating what changes were made: ``True`` if the whole
+         display needs to be updated, something falsy if nothing needs to be
+         updated, else a list of rects to update the display in.
+
+This method should not change the state of the world, because it is not
+guaranteed to be called every frame.
+
+"""
+        dirty = self.graphics.draw(False)
+        return dirty
+
     def quit (self):
         """Called when this is removed from the currently running worlds.
 
-Called before removal---when the :attr:`Game.world` is still this world.
+Called before removal---when :attr:`Game.world` is still this world.
 
 """
         pass
@@ -206,67 +271,164 @@ world drops the pool.
         for pool in pools:
             self.resources.drop(pool, self)
 
-    def update (self):
-        """Called every frame to makes any necessary changes."""
-        pass
+    @property
+    def music_volume (self):
+        """The world's music volume.
 
-    def _update (self):
-        """Called by the game to update."""
-        for e in self.entities:
-            e.update()
-        self.update()
-
-    def _handle_slowdown (self):
-        """Return whether to draw this frame."""
-        s = self.scheduler
-        elapsed = s.elapsed
-        if elapsed is None:
-            # haven't completed a frame yet
-            return True
-        frame_t = s.current_frame_time
-        target_t = s.frame
-        # compute rolling frame average for drawing, but don't store it just
-        # yet
-        r = conf.FPS_AVERAGE_RATIO
-        draw_t = ((1 - r) * self._avg_draw_time +
-                  r * (self._since_last_draw + elapsed))
-
-        if frame_t <= target_t or abs(frame_t - target_t) / target_t < .1:
-            # running at (near enough (within 1% of)) full speed, so draw
-            draw = True
-        else:
-            if draw_t >= 1. / conf.MIN_FPS[self.id]:
-                # not drawing would make the draw FPS too low, so draw anyway
-                draw = True
-            else:
-                draw = False
-        draw |= not conf.DROP_FRAMES
-        if draw:
-            # update rolling draw frame average
-            self._avg_draw_time = draw_t
-            self._since_last_draw = 0
-        else:
-            # remember frame time for when we next draw
-            self._since_last_draw += elapsed
-        return draw
-
-    def pause (self):
-        """Called to pause the game when the window loses focus."""
-        pass
-
-    def draw (self):
-        """Draw to the screen.
-
-:return: a flag indicating what changes were made: ``True`` if the whole
-         display needs to be updated, something falsy if nothing needs to be
-         updated, else a list of rects to update the display in.
-
-This method should not change the state of the world, because it is not
-guaranteed to be called every frame.
+This is actually :data:`conf.MUSIC_VOLUME`, and changing it alters that value,
+and also changes the volume of currently playing music.
 
 """
-        dirty = self.graphics.draw(False)
-        return dirty
+        return conf.MUSIC_VOLUME[self.id]
+
+    @music_volume.setter
+    def music_volume (self, volume):
+        i = self.id
+        if volume > 1:
+            print >> sys.stderr, 'warning: music volume greater than 1'
+        if volume != conf.MUSIC_VOLUME[i]:
+            conf.MUSIC_VOLUME[self.id] = volume
+            conf.changed('MUSIC_VOLUME')
+            pg.mixer.music.set_volume(volume)
+
+    @property
+    def snd_volume (self):
+        """The world's base sound volume.
+
+This is actually :data:`conf.SOUND_VOLUME`, and changing it alters that value,
+and also changes the volume of currently playing sounds.
+
+"""
+        return conf.SOUND_VOLUME[self.id]
+
+    @snd_volume.setter
+    def snd_volume (self, volume):
+        i = self.id
+        if volume != conf.SOUND_VOLUME[i]:
+            conf.SOUND_VOLUME[i] = volume
+            conf.changed('SOUND_VOLUME')
+            # reset playing sound volumes
+            for base_id, snds in self._sounds.iteritems():
+                for snd, vol in snds:
+                    # vol excludes the world's volume
+                    vol *= volume
+                    if vol > 1:
+                        print >> sys.stderr, ('warning: sound volume greater '
+                                              'than 1')
+                    snd.set_volume(volume * vol)
+
+    def play_snd (self, base_id, volume=1):
+        """Play a sound.
+
+play_snd(base_id, volume=1)
+
+:arg base_id: the identifier of the sound to play (we look for ``base_id + i``
+              for a number ``i``---there are as many sounds as set in
+              :data:`conf.SOUNDS`).  If this is not in :data:`conf.SOUNDS`, it
+              is used as the whole filename (without ``'.ogg'``).
+:arg volume: amount to scale the playback volume by.
+
+"""
+        alias = base_id
+        if base_id in conf.SOUND_ALIASES:
+            base_id = conf.SOUND_ALIASES[base_id]
+        volume *= conf.SOUND_VOLUMES[alias]
+        if base_id in conf.SOUNDS:
+            ident = randrange(conf.SOUNDS[base_id])
+            base_id += str(ident)
+        # else not a random sound
+        # load sound, and make a copy so we can play/stop instances separately
+        # (without managing channels, at least)
+        snd = self.resources.snd(base_id + '.ogg')
+        snd = pg.mixer.Sound(snd.get_buffer())
+        # store sound, and stop oldest if necessary
+        playing = self._sounds.setdefault(alias, [])
+        if alias in conf.MAX_SOUNDS:
+            assert len(playing) <= conf.MAX_SOUNDS[alias]
+            if len(playing) == conf.MAX_SOUNDS[alias] and playing:
+                playing.pop(0)[0].stop()
+        else:
+            i = 0
+            while i < len(playing):
+                if playing[i][0].get_num_channels() == 0:
+                    # sound is no longer playing, so remove it
+                    playing.pop(i)
+                else:
+                    i += 1
+        playing.append((snd, volume))
+        # play
+        volume *= conf.SOUND_VOLUME[self.id]
+        if volume > 1:
+            print >> sys.stderr, 'warning: sound volume greater than 1'
+        snd.set_volume(volume)
+        snd.play()
+
+    def _get_base_ids (self, *base_ids, **kwargs):
+        # takes (*base_ids, exclude=False) to get the base_ids this represents
+        if not base_ids:
+            return self._sounds.keys()
+        if kwargs.get('exclude', False):
+            return list(set(self._sounds.keys()).difference(base_ids))
+        else:
+            return base_ids
+
+    def _get_playing_snds (self):
+        # get {sound: channel} for all playing sounds
+        C = pg.mixer.Channel
+        snds = {}
+        for i in xrange(pg.mixer.get_num_channels()):
+            c = C(i)
+            s = c.get_sound()
+            if s is not None:
+                snds[s] = c
+
+    def _with_channels (self, method, *base_ids, **kwargs):
+        # call a method on matching sounds' channels
+        # avoids code duplication in .*pause_snds()
+        base_ids = self._get_base_ids(*base_ids,
+                                      exclude=kwargs.get('exclude', False))
+        playing = self._get_playing_snds()
+        all_snds = self._sounds
+        if not base_ids:
+            base_ids = self._sounds.keys()
+        for base_id in base_ids:
+            for snd, vol in all_snds[base_id]:
+                if snd in playing:
+                    getattr(playing[snd], method)()
+
+    def pause_snds (self, *base_ids, **kwargs):
+        """Pause sounds with the given IDs, else pause all sounds.
+
+:arg base_ids: any number of ``base_id`` arguments as taken by
+               :meth:`play_snd`; if none are given, apply to all.
+
+"""
+        self._with_channels('pause', *base_ids,
+                            exclude=kwargs.get('exclude', False))
+
+    def unpause_snds (self, *base_ids, **kwargs):
+        """Unpause sounds with the given IDs, else unpause all sounds.
+
+:arg base_ids: any number of ``base_id`` arguments as taken by
+               :meth:`play_snd`; if none are given, apply to all.
+
+"""
+        self._with_channels('unpause', *base_ids,
+                            exclude=kwargs.get('exclude', False))
+
+    def stop_snds (self, *base_ids, **kwargs):
+        """Stop all playing sounds with the given IDs, else stop all sounds.
+
+:arg base_ids: any number of ``base_id`` arguments as taken by
+               :meth:`play_snd`; if none are given, apply to all.
+
+"""
+        all_snds = self._sounds
+        for base_id in self._get_base_ids(
+            *base_ids, exclude=kwargs.get('exclude', False)
+        ):
+            for snd, vol in all_snds.pop(base_id, ()):
+                snd.stop()
 
 
 class Game (object):
@@ -301,16 +463,19 @@ Takes the same arguments as :meth:`create_world` and passes them to it.
         self.text_renderers = {}
 
         self._init_cbs()
+        # set up music
+        pg.mixer.music.set_endevent(conf.EVENT_ENDMUSIC)
+        self._music = []
+        d = conf.MUSIC_DIR
+        try:
+            files = os.listdir(d)
+        except OSError:
+            # no directory
+            self._music = []
+        else:
+            self._music = [d + f for f in files if os.path.isfile(d + f)]
         # start first world
         self.start_world(*args, **kwargs)
-        # start playing music
-        pg.mixer.music.set_endevent(conf.EVENT_ENDMUSIC)
-        #: Filenames for known music.
-        self.music = []
-        self.find_music()
-        self.play_music()
-        if not conf.MUSIC_AUTOPLAY:
-            pg.mixer.music.pause()
 
     def _init_cbs (self):
         # set up settings callbacks
@@ -388,6 +553,10 @@ should be passed to that base class).
             self.text_renderers[name] = r
         pg.event.set_grab(conf.GRAB_EVENTS[ident])
         pg.mouse.set_visible(conf.MOUSE_VISIBLE[ident])
+        if conf.MUSIC_AUTOPLAY[ident]:
+            self.play_music()
+        else:
+            pg.mixer.music.stop()
         pg.mixer.music.set_volume(conf.MUSIC_VOLUME[ident])
         world._select()
 
@@ -467,48 +636,13 @@ If this quits the last (root) world, exit the game.
         self.resources.use(new_pool, self)
         self._using_pool = new_pool
 
-    def play_snd (self, base_id, volume = 1):
-        """Play a sound.
-
-play_snd(base_id, volume = 1)
-
-:arg base_id: the identifier of the sound to play (we look for ``base_id + i``
-              for a number ``i``---there are as many sounds as set in
-              :data:`conf.SOUNDS`).
-:arg volume: amount to scale the playback volume by.
-
-"""
-        ident = randrange(conf.SOUNDS[base_id])
-        # load sound
-        snd = conf.SOUND_DIR + base_id + str(ident) + '.ogg'
-        snd = pg.mixer.Sound(snd)
-        if snd.get_length() < 10 ** -3:
-            # no way this is valid
-            return
-        volume *= conf.SOUND_VOLUME * conf.SOUND_VOLUMES[base_id]
-        snd.set_volume(volume)
-        snd.play()
-
-    def find_music (self):
-        """Store a list of the available music files in :attr:`music`."""
-        d = conf.MUSIC_DIR
-        try:
-            files = os.listdir(d)
-        except OSError:
-            # no directory
-            self.music = []
-        else:
-            self.music = [d + f for f in files if os.path.isfile(d + f)]
-
     def play_music (self):
-        """Play the next piece of music, chosen randomly from :attr:`music`."""
-        if self.music:
-            f = choice(self.music)
+        """Play the next piece of music, chosen randomly from
+:data:`conf.MUSIC_DIR`."""
+        if self._music:
+            f = choice(self._music)
             pg.mixer.music.load(f)
             pg.mixer.music.play()
-        else:
-            # stop currently playing music if there's no music to play
-            pg.mixer.music.stop()
 
     # display
 

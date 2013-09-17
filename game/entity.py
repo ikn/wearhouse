@@ -96,7 +96,7 @@ class MovingEntity (NonRect):
             self.jumping = True
             self._jump_finished.reset()
             self._jumped = True
-            conf.GAME.play_snd('hit', conf.SOUND_VOLUMES['jump'])
+            self.world.play_snd('jump')
         elif held and self.jumping and not self._jumped:
             # continue jumping
             self.vel[1] -= conf.JUMP_CONTINUE[self.ident]
@@ -172,7 +172,7 @@ class MovingEntity (NonRect):
         if dirn != 0 and self.on_ground:
             if self._can_step_snd:
                 self._can_step_snd.reset()
-                conf.GAME.play_snd('hit', conf.SOUND_VOLUMES['walk'])
+                self.world.play_snd('walk')
         # animation
         if dirn == 0:
             if self.walking:
@@ -232,7 +232,7 @@ class Player (MovingEntity):
         # use nearby items
         r = self.rect
         if any(r.colliderect(c.rect) for c in self.world.changers):
-            conf.GAME.play_snd('change')
+            self.world.play_snd('change')
             self.outfit = 'villain' if self.outfit == 'hero' else 'hero'
             self.update_graphics()
         for s in self.world.switches:
@@ -257,7 +257,7 @@ class Player (MovingEntity):
         if not self.dead:
             self.dead = True
             self.world.die()
-            conf.GAME.play_snd('die')
+            self.world.play_snd('die')
 
 
 class Enemy (MovingEntity):
@@ -302,7 +302,7 @@ class Enemy (MovingEntity):
     def die (self):
         if not self.dead:
             self.dead = True
-            conf.GAME.play_snd('zap')
+            self.world.play_snd('zap')
 
     def dist (self, other_pos):
         pos = self.rect.center
@@ -338,7 +338,7 @@ class Enemy (MovingEntity):
             else:
                 seeking = dist <= conf.START_SEEK_NEAR and los
             if seeking and self._lost:
-                conf.GAME.play_snd('alert-guard')
+                self.world.play_snd('alert-guard')
             if los:
                 self._lost.reset()
                 self._last_seen = player_pos
@@ -360,7 +360,7 @@ class Goal (NonRect):
         g.frame_time = conf.ANIMATION_TIMES[self.ident]
 
     def open (self):
-        conf.GAME.play_snd('door')
+        self.world.play_snd('door')
         self.graphic.play('open', 0)
 
 
@@ -388,7 +388,7 @@ class Switch (NonRect):
         self.on = True
 
     def toggle (self):
-        conf.GAME.play_snd('lever')
+        self.world.play_snd('lever')
         self._barrier.toggle()
         self.on = not self.on
         self.graphic.graphic = not self.on

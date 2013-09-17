@@ -52,8 +52,9 @@ class Conf (object):
         'door': .8,
         'lever': .5
     })
+    SOUND_ALIASES = {'jump': 'hit', 'walk': 'hit'}
     STEP_SOUND_TIME = {'player': .25, 'enemy': .35}
-    MAX_SOUNDS = dd(None, change = 1, lever = 1)
+    MAX_SOUNDS = dd(None, change=1, lever=1)
 
     # graphics
     LAYERS = dd(0, {

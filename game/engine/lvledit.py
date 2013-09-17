@@ -56,7 +56,13 @@
     - (shift-)tab to select next (previous) object (only if one selected)
     - hold shift to ignore snapping to grid
     - hold alt to snap cursor to grid
- - have .load(fn_or_data), .save([fn_else_returns_data])
+ - have .load(fn_or_data[, transform_fn]), .save([fn_else_returns_data][, transform_fn])
+ - objects have modifiable properties
+    - object args can be functions to filter by current properties
+        - change what they affect when properties change
+    - generated level output contains properties
+    - have 'modifier' objects that modify an object you click on
+        - define a function that takes the clicked object's properties and alters it in-place to modify the object
 
 args:
  - object types

@@ -18,27 +18,20 @@ button2 walk HELD
     pos kbd e
 
 button jump DOWN HELD
+    kbd SPACE
     kbd UP
+    # wasd
     kbd w
     kbd COMMA
-    kbd RETURN
-    kbd SPACE
-    kbd KP_ENTER
 
 button use DOWN
-    # wasd
     kbd DOWN
+    # wasd
     kbd s
     kbd o
-    # mods
-    kbd LCTRL
-    kbd LSHIFT
-    kbd RCTRL
-    kbd RSHIFT
-    # zxc
-    kbd z
-    kbd SEMICOLON
+    # x
     kbd x
     kbd q
-    kbd c
-    kbd j
+
+button zoom DOWN
+    kbd z

@@ -6,6 +6,10 @@ class Conf (object):
     IDENT = 'wearhouse'
     WINDOW_TITLE = 'Wearhouse'
     WINDOW_ICON = conf.IMG_DIR + 'icon.png'
+    RES_W = RES_SINGLE = (960, 540)
+    RES_DOUBLE = (RES_SINGLE[0] * 2, RES_SINGLE[1] * 2)
+    SCALE = 'none'
+    SCALES = ('none', 'scale', 'scale2x', 'smoothscale')
 
     # gameplay
     # collision

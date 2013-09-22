@@ -1,3 +1,5 @@
+from itertools import cycle
+
 import pygame as pg
 from pygame import Rect
 
@@ -8,6 +10,11 @@ from .conf import Conf
 from . import entity
 
 conf.add(Conf)
+
+scales = cycle(conf.SCALES)
+while True:
+    if next(scales) == conf.SCALE:
+        break
 
 
 def mk_tilemap (ident, *rects, **kwargs):
@@ -31,6 +38,14 @@ def mk_tilemap (ident, *rects, **kwargs):
 
 class Level (World):
     def init (self, ident=0, evt='start', bg=None, wall_graphic=None):
+        self._display = self.display
+        self.display = self.graphics = \
+            gfx.GraphicsManager(self.scheduler, conf.RES_SINGLE)
+        # the surface we draw to
+        self.sfc = self.graphics.orig_sfc
+        self.display.orig_sfc = self._display.orig_sfc
+        self.set_scaling(conf.SCALE)
+
         # might get a negative number, which breaks progression
         self._ident = ident % len(conf.LEVELS)
         self._won = False
@@ -77,6 +92,7 @@ class Level (World):
         eh['reset'].cb(lambda: self.reset())
         for action in ('walk', 'jump', 'use'):
             eh[action].cb(getattr(self.player, action))
+        eh['zoom'].cb(lambda: self.set_scaling(next(scales)))
 
         # fade in
         if evt == 'start':
@@ -84,8 +100,32 @@ class Level (World):
         elif evt == 'died':
             self.graphics.fade_from(*conf.DIE_FADE_IN)
 
+    def set_scaling (self, scale):
+        conf.SCALE = scale
+
+        if scale != 'none':
+            conf.RES_W = conf.RES_DOUBLE
+            # add GM to display and use display for output
+            self._display.add(self.graphics.resize(*conf.RES_DOUBLE))
+            self.display = self._display
+            self.graphics.scale_fn = (
+                (lambda sfc, sz: pg.transform.scale2x(sfc))
+                if scale == 'scale2x'
+                else getattr(pg.transform, scale)
+            )
+            self.graphics.orig_sfc = self.sfc
+        else:
+            conf.RES_W = conf.RES_SINGLE
+            # remove GM from display and use GM for output
+            # (resize() with no args removes scaling)
+            self._display.rm(self.graphics.resize())
+            self.display = self.graphics
+            self.display.orig_sfc = self._display.orig_sfc
+
+        conf.GAME.refresh_display()
+
     def pause (self, secret=False):
-        conf.GAME.start_world(Paused, self.graphics.surface, secret)
+        conf.GAME.start_world(Paused, self.display.orig_sfc, secret)
 
     def reset (self, died=False):
         # immediately reset the level (starts a new world)

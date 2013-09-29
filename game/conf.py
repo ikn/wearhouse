@@ -12,6 +12,7 @@ class Conf (object):
     SCALES = ('none', 'scale', 'scale2x', 'smoothscale')
 
     # gameplay
+    PAD_DEADZONE = .2
     # collision
     ENTITY_SIZE = {'player': (10, 36), 'enemy': (16, 18), 'goal': (20, 40),
                    'changer': (20, 40), 'switch': (20, 20)}

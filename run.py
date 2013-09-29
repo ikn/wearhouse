@@ -1,6 +1,7 @@
 from sys import argv
 import os
 
+from pygame import joystick
 if os.name == 'nt':
     # for Windows freeze support
     import pygame._view
@@ -10,6 +11,10 @@ from game.level import Level as entry_world
 
 if __name__ == '__main__':
     engine.init()
+
+    # initialise all gamepads
+    for i in xrange(joystick.get_count()):
+        joystick.Joystick(i).init()
 
     args = []
     if len(argv) > 1:

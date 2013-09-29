@@ -5,5 +5,10 @@ button continue DOWN
     kbd ESCAPE
     kbd BACKSPACE
 
+    pad button 1
+    pad button 7
+
 button quit DOWN
     kbd q
+
+    pad button 6

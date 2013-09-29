@@ -39,6 +39,8 @@ Move around each level and try to get to the elevator to the next floor.
 
     CONTROLS
 
+    keyboard
+
 arrow keys, WASD, space: move, jump, interact with objects
 space: also jump
 R: reset current level
@@ -50,8 +52,18 @@ Z: cycle through scaling modes (1x, 2x unfiltered, scale2x, 2x filtered)
 F10: minimise
 
 WASD, R and X are in the same place in the Dvorak keyboard layout too.
-
 You may also quit by closing the game window.
+
+    Xbox 360 controller (others may work too)
+
+left A-stick: move
+A: jump
+B, X: interact with objects
+back: reset current level
+start: pause
+B, start: continue when paused
+back: quit when paused
+Y: cycle through scaling modes (1x, 2x unfiltered, scale2x, 2x filtered)
 
     LICENSING
 

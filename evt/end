@@ -4,3 +4,8 @@ button continue DOWN
     kbd KP_ENTER
     kbd ESCAPE
     kbd BACKSPACE
+
+    pad button 0
+    pad button 1
+    pad button 6
+    pad button 7

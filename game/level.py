@@ -93,6 +93,7 @@ class Level (World):
         for action in ('walk', 'jump', 'use'):
             eh[action].cb(getattr(self.player, action))
         eh['zoom'].cb(lambda: self.set_scaling(next(scales)))
+        eh.set_deadzones(('pad', conf.PAD_DEADZONE))
 
         # fade in
         if evt == 'start':

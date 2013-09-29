@@ -2,13 +2,19 @@ button pause DOWN
     kbd ESCAPE
     kbd BACKSPACE
 
+    pad button 7
+
 button secret_pause DOWN
     [SHIFT] kbd ESCAPE
     [SHIFT] kbd BACKSPACE
 
+    [button 4] pad button 7
+
 button reset DOWN
     kbd r
     kbd p
+
+    pad button 6
 
 axis walk
     neg kbd LEFT
@@ -17,12 +23,16 @@ axis walk
     pos kbd d
     pos kbd e
 
+    neg pos pad axis 0
+
 button jump DOWN HELD
     kbd SPACE
     kbd UP
     # wasd
     kbd w
     kbd COMMA
+
+    pad button 0
 
 button use DOWN
     kbd DOWN
@@ -33,5 +43,10 @@ button use DOWN
     kbd x
     kbd q
 
+    pad button 1
+    pad button 2
+
 button zoom DOWN
     kbd z
+
+    pad button 3

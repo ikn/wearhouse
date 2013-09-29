@@ -179,7 +179,7 @@ class MovingEntity (NonRect):
                 self.update_graphics()
         else:
             old_dirn = self.dirn
-            self.dirn = dirn
+            self.dirn = dirn = 1 if dirn > 0 else -1
             if not self.walking:
                 # start walking
                 self.walking = True

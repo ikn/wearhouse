@@ -68,7 +68,7 @@ class MovingEntity (NonRect):
         self.on_ground = None # entity ident
         self.walking = False
         self.dirn = -1
-        self._to_move = [0, 0]
+        self._to_move = 0
         self.jumping = False
         self._jumped = False
         self._extra_collide_es = [] # non-solid entities to collide with
@@ -79,10 +79,8 @@ class MovingEntity (NonRect):
         self._jump_finished = C(conf.JUMP_TIME[self.ident])
         self._can_autojump = C(conf.AUTOJUMP_COOLDOWN[self.ident])
 
-    def walk (self, dirn):
-        # dirn is 0 (left) or 1 (right)
-        # handle both directions together when we update
-        self._to_move[dirn] = 1
+    def walk (self, pos):
+        self._to_move = pos
 
     def jump (self, held=True):
         if not self.jumping and self.on_ground:
@@ -158,8 +156,8 @@ class MovingEntity (NonRect):
         v = self.vel
         speed = (conf.MOVE_SPEED[self.ident]
                  if self.on_ground else conf.MOVE_SPEED_AIR[self.ident])
-        dirn = self._to_move[1] - self._to_move[0]
-        self._to_move = [0, 0]
+        dirn = self._to_move
+        self._to_move = 0
         v[0] += speed * dirn
         v[1] += conf.GRAVITY
         damp = conf.FRICTION if self.on_ground else conf.AIR_RESISTANCE
@@ -218,10 +216,10 @@ class Player (MovingEntity):
         self.graphic.play(self.outfit + ('walk' if self.walking else '') +
                           ('left' if self.dirn == -1 else 'right'))
 
-    def walk (self, dirn, evt):
+    def walk (self, pos):
         if self.dead:
             return
-        MovingEntity.walk(self, dirn)
+        MovingEntity.walk(self, pos)
 
     def jump (self, evt):
         if self.dead:
@@ -312,7 +310,7 @@ class Enemy (MovingEntity):
 
     def _move_towards (self, dp):
         if abs(dp[0]) > conf.STOP_SEEK_NEAR:
-            self.walk(dp[0] > 0)
+            self.walk(1 if dp[0] > 0 else -1)
         if self._blocked or self.jumping:
             self.jump()
 

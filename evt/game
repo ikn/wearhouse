@@ -10,7 +10,7 @@ button reset DOWN
     kbd r
     kbd p
 
-button2 walk HELD
+axis walk
     neg kbd LEFT
     pos kbd RIGHT
     neg kbd a

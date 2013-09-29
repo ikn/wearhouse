@@ -518,11 +518,48 @@ events.
 
     def stop_monitor_deadzones (self):
         """Not implemented."""
-        # returns {(device, id, *args): deadzone}, args is axis for pad
+        # returns {(device, id, attrs): deadzone}, attrs is required attribute values on the input (pad axis: {'axis': axis_input.axis})
         # can register other deadzone events?
         pass
 
-    def set_deadzones (self, deadzones):
-        """Not implemented."""
-        # takes stop_monitor_deadzones result
-        pass
+    def set_deadzones (self, *deadzones):
+        """Set deadzones for all registered inputs that support it.
+
+:attr deadzones: any number of
+                 ``((device, device_id=True, attrs={}), deadzone)`` tuples to
+                 set the ``deadzone`` attribute of each matching input to
+                 ``deadzone``.  ``attrs`` is a dict of attributes the input
+                 must have.  See also
+                 :attr:`Input.device <engine.evt.inputs.Input.device>` and
+                 :attr:`Input.device_id <engine.evt.inputs.Input.device_id>`.
+                 An item may also be just ``(device, deadzone)``.
+
+"""
+        for ident, dz in deadzones:
+            if isinstance(ident, basestring):
+                # just got a device
+                ident = [ident]
+            else:
+                ident = list(ident)
+            if len(ident) == 0:
+                raise ValueError('invalid input identifier: empty sequence')
+            if len(ident) == 1:
+                # accept any device ID
+                ident.append(True)
+            if len(ident) == 2:
+                # no more constraints
+                ident.append({})
+            device, dev_id, attrs = ident
+
+            for i in self._inputs:
+                if (i.device == device and i.device_id is not None and
+                    (dev_id is True or i.device_id == dev_id) and
+                    all(getattr(i, attr) == val
+                        for attr, val in attrs.iteritems())):
+                    try:
+                        getattr(i, 'deadzone')
+                    except AttributeError:
+                        # doesn't have a deadzone
+                        pass
+                    else:
+                        i.deadzone = dz

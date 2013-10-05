@@ -8,7 +8,7 @@ TODO:
  - eh.set_deadzones (can set by device var; can pass a default for other devices/ids)
  - auto pad(/other?) initialisation
     [CONFIG]
- - can do per-device, per-input name or global thresholds/bdy - and make them setters, and provide eh.set_{thresholds,bdys}
+ - can do (per-device, per-(input name) or global) thresholds/bdy - and make them setters, and provide eh.set_{thresholds,bdys}
  - conffile.generate{,_s}, eh.save{,_s}
  - how do domain filenames work?  Do we try loading from a homedir one first, then fall back to the distributed one?  Do we save to the homedir one?
  - input groups for having the same inputs in different events, eg.

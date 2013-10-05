@@ -52,7 +52,6 @@ Z: cycle through scaling modes (1x, 2x unfiltered, scale2x, 2x filtered)
 F10: minimise
 
 WASD, R and X are in the same place in the Dvorak keyboard layout too.
-You may also quit by closing the game window.
 
     Xbox 360 controller (others may work too)
 
@@ -64,6 +63,8 @@ start: pause
 B, start: continue when paused
 back: quit when paused
 Y: cycle through scaling modes (1x, 2x unfiltered, scale2x, 2x filtered)
+
+You may also quit by closing the game window.
 
     LICENSING
 

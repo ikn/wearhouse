@@ -5,6 +5,8 @@
 TODO:
  - use subsurface for crop transform (but requires rect to be within surface)
  - GraphicView probably doesn't work if in different manager - need to have own _dirty?
+ - something that wraps a Graphic to be a copy of it, like Animation does, and has .graphic setter
+    - use in Animation, etc.
 
 ---NODOC---
 
@@ -184,8 +186,9 @@ really.  To get the real rect, use :attr:`postrot_rect`.
     def rect (self, rect):
         # need to set dirty in old and new rects (if changed)
         rect = Rect(rect)
+        old_rect = self._rect
         self._rect = Rect(rect.topleft, self._rect.size)
-        if rect.size != self.last_rect.size:
+        if rect.size != old_rect.size:
             self.resize(*rect.size)
 
     @property
@@ -1320,28 +1323,23 @@ state*.
         return g
 
     def view (self):
-        parent_cls = type(self)
+        """Return a 'view' to this graphic.
 
-        class GraphicView (parent_cls):
-            """'View' to a :class:`Graphic` (:class:`Graphic` subclass).
-
-GraphicView(graphic)
-
-:arg graphic: the :class:`Graphic` (or subclass) instance to provide a wrapper
-            for.
-
-This is a wrapper around a graphic that allows assigning a different position
-and visibility (:attr:`Graphic.visible`, :attr:`Graphic.layer`, etc.) without
-affecting the original graphic (or any other wrappers).
+This is a wrapper around the graphic that allows assigning a different position
+and visibility (:attr:`visible`, :attr:`layer`, etc.) without affecting the
+original graphic (or any other wrappers).  It is a subclass of this graphic's
+class.
 
 Changes to the image represented by either the wrapper or the original graphic
 affect both instances.  This includes both transformations and changes to the
 original surface.
 
-``graphic``'s class may not define a ``child`` property.
+This may not be used on subclasses that define a ``child`` property.
 
 """
+        parent_cls = type(self)
 
+        class GraphicView (parent_cls):
             is_view = True
             _faked_attrs = ('_rect', 'last_rect', '_postrot_rect',
                             '_last_postrot_rect', '_manager', 'visible',

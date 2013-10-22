@@ -19,6 +19,29 @@ mod_devices = {
     'pad': ('pad',)
 }
 
+
+def _init_pad (dev_id=True):
+    # 'pad' device initialisation function
+    done = []
+    todo = xrange(pg.joystick.get_count()) if dev_id is True else (dev_id,)
+    for i in todo:
+        try:
+            pg.joystick.Joystick(i).init()
+        except pg.error:
+            pass
+        else:
+            done.append(i)
+    return done
+
+
+#: ``{device: init_fn}`` giving initialisation functions to initialise devices
+#: where possible.  These functions take the ``Input.device_id`` to initialise
+#: for, or no argument to initialise for all devices of this type, and should
+#: return a sequence of device IDs that have been successfully initialised.
+device_init_handlers = {
+    'pad': _init_pad
+}
+
 class mbtn:
     """Contains mouse button aliases."""
     LEFT = 1
@@ -31,12 +54,18 @@ class mbtn:
 def _pad_matches (device_id):
     # get the pygame.joystick.Joystick instances that match the given device_id
     if device_id is True:
-        js = xrange(pg.joystick.get_count())
+        ids = xrange(pg.joystick.get_count())
     elif device_id is None:
-        js = ()
+        ids = ()
     else:
-        js = (self._device_id,)
-    return [pg.joystick.Joystick(j) for j in js]
+        ids = (device_id,)
+    js = []
+    for i in ids:
+        try:
+            js.append(pg.joystick.Joystick(i))
+        except pg.error:
+            print >> sys.stderr, 'warning: no such pad: {}'.format(i)
+    return js
 
 
 class Input (object):
@@ -68,8 +97,9 @@ types may be equal).
         #: keys ``'button'``, ``'axis'``, ``'relaxis'``.
         self.provides = {'button': False, 'axis': False, 'relaxis': False}
         #: Variable representing the current device ID; may be a string as a
-        #: variable name, or ``None`` (see :meth:`EventHandler.assign_devices()
-        #: <engine.evt.handler.EventHandler.assign_devices>` for details).
+        #: variable name, or ``None``.  See also
+        #: :meth:`EventHandler.assign_devices()
+        #: <engine.evt.handler.EventHandler.assign_devices>`).
         self.device_var = None
         #: A set of :class:`Event <engine.evt.evts.Event>` instances that
         #: contain this input, or ``None``.
@@ -221,6 +251,7 @@ value as the attribute value to filter by.  If a subclass does not provide
                 ids = (device_id,)
             self.filter(self.device_id_attr, *ids, refilter = True)
             self._device_id = device_id
+            self._init()
         else:
             raise TypeError('this Input type doesn\'t support device IDs')
 
@@ -231,6 +262,28 @@ This implementation does nothing.
 
 """
         pass
+
+    def _init (self):
+        # initialise the device/id associated with this input
+        dev_id = self._device_id
+        if dev_id is not None:
+            init_fn = device_init_handlers.get(self.device)
+            if init_fn is not None:
+                ehs = self._ehs()
+
+                if dev_id is True:
+                    done = init_fn()
+                else:
+                    key = (self.device, dev_id)
+                    if any(key in eh._init_data for eh in ehs):
+                        # make sure every handler knows about this
+                        done = (dev_id,)
+                    else:
+                        done = init_fn(dev_id)
+
+                keys = [(dev_id, dev_id) for dev_id in done]
+                for eh in ehs:
+                    eh._init_data.update(keys)
 
 
 class BasicInput (Input):
@@ -253,7 +306,7 @@ BasicInput(pgevt)
         return self._str(pg.event.event_name(self.pgevt).upper())
 
     def handle (self, pgevt):
-        """:meth:`Input.handle`."""
+        """:inherit:"""
         Input.handle(self, pgevt)
         self._pgevts.append(pgevt)
         return True
@@ -435,7 +488,7 @@ component ``0`` for Pygame events with IDs in this list, and up on component
 
 
 class KbdKey (ButtonInput):
-    """:class:`ButtonInput` subclass representing a keyboard key.
+    """Keyboard key.
 
 The ``button`` argument is required, and is the key code.
 
@@ -456,7 +509,7 @@ The ``button`` argument is required, and is the key code.
     _mod_btn_name = _btn_name
 
     def normalise (self):
-        """:meth:`Input.normalise`."""
+        """:inherit:"""
         ButtonInput.set_held(self, pg.key.get_pressed()[self.button])
 
 
@@ -489,7 +542,7 @@ class _SneakyMultiKbdKey (KbdKey):
         return False
 
     def normalise (self):
-        """:meth:`Input.normalise`."""
+        """:inherit:"""
         held = pg.key.get_pressed()
         for k in self._keys:
             self._held_multi[k] = held[k]
@@ -497,7 +550,7 @@ class _SneakyMultiKbdKey (KbdKey):
 
 
 class MouseButton (ButtonInput):
-    """:class:`ButtonInput` subclass representing a mouse button.
+    """Mouse button.
 
 The ``button`` argument is required, and is the mouse button ID.
 
@@ -519,16 +572,19 @@ The ``button`` argument is required, and is the mouse button ID.
         return 'mouse button {0}'.format(self.button)
 
     def normalise (self):
-        """:meth:`Input.normalise`."""
+        """:inherit:"""
         held = pg.mouse.get_pressed()
-        if self.button >= len(held):
+        b = self.button - 1
+        if b >= len(held):
             print >> sys.stderr, 'warning: cannot determine held state of ' \
                                  '{0}'.format(self)
-        ButtonInput.set_held(self, held[self.button])
+        # Pygame doesn't return states for some buttons, such as scroll wheels
+        held = held[b] if b < len(held) else False
+        ButtonInput.set_held(self, held)
 
 
 class PadButton (ButtonInput):
-    """:class:`ButtonInput` subclass representing a gamepad button.
+    """Gamepad button.
 
 PadButton(device_id, button, *mods)
 
@@ -562,23 +618,20 @@ PadButton(device_id, button, *mods)
         return 'pad {0} button {1}'.format(self._str_dev_id(), self.button)
 
     def normalise (self):
-        """:meth:`Input.normalise`."""
+        """:inherit:"""
         for j in _pad_matches(self._device_id):
             try:
                 held = j.get_button(self.button)
             except pg.error:
-                print >> (
-                    sys.stderr,
-                    'warning: cannot determine held state of {0} (gamepad not '
-                    'initialised or no such button)'.format(self)
-                )
+                print >> sys.stderr, \
+                    'warning: cannot determine held state of {0} (gamepad ' \
+                    'not initialised or no such button)'.format(self)
             else:
                 ButtonInput.set_held(self, held)
 
 
 class AxisInput (ButtonInput):
-    """Abstract base class representing 2-component axes
-(:class:`ButtonInput` subclass).
+    """Abstract base class representing 2-component axes.
 
 AxisInput([axis][, thresholds], *mods)
 
@@ -732,12 +785,12 @@ number).  Otherwise, this method does nothing.
                     'has the wrong number of components'
                 )
             for i, apos in enumerate(apos):
-                rtn |= self.axis_motion(mods_match, i, apos)
+                rtn |= self.axis_motion(mods_match, i, apos, True)
         return rtn
 
 
 class PadAxis (AxisInput):
-    """:class:`AxisInput` subclass representing a gamepad axis.
+    """Gamepad axis.
 
 PadAxis(device_id, axis[, thresholds], *mods)
 
@@ -772,22 +825,20 @@ PadAxis(device_id, axis[, thresholds], *mods)
         return self._str('{0}, {1}'.format(self._str_dev_id(), self.axis))
 
     def normalise (self):
-        """:meth:`Input.normalise`."""
+        """:inherit:"""
         for j in _pad_matches(self._device_id):
             try:
                 apos = j.get_axis(self.axis)
             except pg.error:
-                print >> (
-                    sys.stderr,
-                    'warning: cannot determine held state of {0} (gamepad not '
-                    'initialised or no such axis)'.format(self)
-                )
+                print >> sys.stderr, \
+                    'warning: cannot determine held state of {0} (gamepad ' \
+                    'not initialised or no such axis)'.format(self)
             else:
                 self.pos = (apos,)
 
 
 class PadHat (AxisInput):
-    """:class:`AxisInput` subclass representing a gamepad axis.
+    """Gamepad hat.
 
 PadHat(device_id, axis[, thresholds], *mods)
 
@@ -823,23 +874,20 @@ PadHat(device_id, axis[, thresholds], *mods)
         return self._str('{0}, {1}'.format(self._str_dev_id(), self.axis))
 
     def normalise (self):
-        """:meth:`Input.normalise`."""
+        """:inherit:"""
         for j in _pad_matches(self._device_id):
             try:
                 apos = j.get_hat(self.axis)
             except pg.error:
-                print >> (
-                    sys.stderr,
-                    'warning: cannot determine held state of {0} (gamepad not '
-                    'initialised or no such hat)'.format(self)
-                )
+                print >> sys.stderr, \
+                    'warning: cannot determine held state of {0} (gamepad ' \
+                    'not initialised or no such hat)'.format(self)
             else:
                 self.pos = (apos,)
 
 
 class RelAxisInput (AxisInput):
-    """Abstract base class representing 2-component relative axes
-(:class:`AxisInput` subclass).
+    """Abstract base class representing 2-component relative axes.
 
 RelAxisInput([relaxis][, bdy][, thresholds][, mods])
 
@@ -892,7 +940,7 @@ behaviour in this case is undefined.
         self.bdy = bdy
 
     def handle (self, pgevt, mods_match):
-        """:class:`ButtonInput.handle`."""
+        """:inherit:"""
         rtn = Input.handle(self, pgevt)
         if hasattr(self, 'relaxis_val_attr'):
             rpos = getattr(pgevt, self.relaxis_val_attr)
@@ -930,14 +978,14 @@ If no components are given, reset in all components.
             self.rel[c] = 0
 
     def normalise (self):
-        """:meth:`Input.normalise`."""
+        """:inherit:"""
         self.reset()
         self.pos = (0,) * (self.components // 2)
         self._held = [False] * self.components
 
 
 class MouseAxis (RelAxisInput):
-    """:class:`RelAxisInput` subclass representing both mouse axes.
+    """Represents both mouse axes.
 
 MouseAxis([bdy][, thresholds], *mods)
 

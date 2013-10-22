@@ -3,10 +3,13 @@
 ---NODOC---
 
 TODO:
- - Tilemap: should change if given Graphics change (tile_types), like Animation
-    - graphic.require(tilemap)
-    - see Animation.render()
-    - note that any graphics passed have their managers removed (and so mustn't be locked)
+ - Tilemap:
+    - should change if given Graphics change (tile_types), like Animation
+        - graphic.require(tilemap)
+        - see Animation.render()
+        - note that any graphics passed have their managers removed (and so mustn't be locked)
+    - should provide tile setters/getters
+    - .update_from from_disk=True should call Graphic.reload() on graphics
  - tiled graphic
     - graphic form is like Tilemap's tile_graphic
  - particle system
@@ -28,8 +31,7 @@ from .graphic import Graphic
 
 
 class Colour (Graphic):
-    """A solid rect of colour
-(:class:`Graphic <engine.gfx.graphic.Graphic>` subclass).
+    """A solid rect of colour.
 
 Colour(colour, rect, layer=0)
 
@@ -121,8 +123,7 @@ Colour(colour, rect, layer=0)
 
 
 class Text (Graphic):
-    """Rendered text (:class:`Graphic <engine.gfx.graphic.Graphic>`
-subclass).
+    """Graphic displaying rendered text.
 
 Text(text, renderer, pos=(0, 0), options={}, layer=0)
 
@@ -214,7 +215,7 @@ use."""
         return self._renderer.render(self._text, self._options)
 
     def render (self):
-        """:meth:`Graphic.render() <engine.gfx.graphic.Graphic.render>`."""
+        """:inherit:"""
         changed = False
         if self._last_text != self._text:
             changed = True
@@ -232,8 +233,7 @@ use."""
 
 
 class Animation (Graphic):
-    """An animated graphic (:class:`Graphic <engine.gfx.graphic.Graphic>`
-subclass).
+    """An animated graphic.
 
 Animation(imgs, pos=(0, 0), layer=0[, scheduler],
           pool=conf.DEFAULT_RESOURCE_POOL, res_mgr=conf.GAME.resources)
@@ -241,9 +241,11 @@ Animation(imgs, pos=(0, 0), layer=0[, scheduler],
 :arg imgs:
     a sequence of images as part of the animation; each can be a Pygame
     surface, a filename to load an surface from, or a
-    :class:`Graphic <engine.gfx.graphic.Graphic>` instance. Note that a
-    :class:`util.Spritemap <engine.gfx.util.Spritemap>` instance is a valid
-    form for this argument.
+    :class:`Graphic <engine.gfx.graphic.Graphic>` instance (in which case it is
+    removed from any
+    :class:`GraphicsManager <engine.gfx.container.GraphicsManager>` it is in).
+    Note that a :class:`util.Spritemap <engine.gfx.util.Spritemap>` instance is
+    a valid form for this argument.
 :arg scheduler: :class:`sched.Scheduler <engine.sched.Scheduler>` instance to
                 use for timing; if not given, animations can only be played
                 when the graphic is contained by a
@@ -614,7 +616,7 @@ unqueue(*names) -> self
         return self
 
     def render (self):
-        """:meth:`Graphic.render() <engine.gfx.graphic.Graphic.render>`."""
+        """:inherit:"""
         # set orig_dirty where the graphic is dirty, if a graphic
         g = self.graphics[self.graphic]
         if isinstance(g, Graphic):
@@ -637,8 +639,7 @@ unqueue(*names) -> self
 
 
 class Tilemap (Graphic):
-    """A finite, flat grid of tiles
-(:class:`Graphic <engine.gfx.graphic.Graphic>` subclass).
+    """A finite, flat grid of tiles.
 
 Tilemap(grid, tile_data[, tile_types], pos=(0, 0), layer=0[, translate_type],
         cache_graphic=False, pool=conf.DEFAULT_RESOURCE_POOL,

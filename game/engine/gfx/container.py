@@ -4,7 +4,7 @@
 
 TODO:
  - make it possible for GM to have transparent BG (only if orig_sfc has alpha)
- - GG:
+ - GraphicsGroup:
     - allow for transforms
     - internal layers (has allowed range in manager, and distributes graphics within it)
  - ignore off-screen (OoB) things (clip all dirty rects and discard zero-size ones)
@@ -254,7 +254,6 @@ to put graphics in."""
 
 class GraphicsManager (Graphic):
     """Draws things to a surface intelligently.
-:class:`Graphic <engine.gfx.graphic.Graphic>` subclass.
 
 GraphicsManager(scheduler[, sfc], pos=(0, 0), layer=0)
 
@@ -285,6 +284,7 @@ however, and transformations are only applied in
         self._gm_dirty = False
         self._overlay = None
         self._fade_id = None
+        self.fading = False
         #: ``{layer: graphics}`` dict, where ``graphics`` is a set of the
         #: graphics in layer ``layer``, each as taken by :meth:`add`.
         self.graphics = {}
@@ -484,16 +484,18 @@ persists; set :attr:`overlay` to ``None`` to remove it.
         self._fade_id = self.scheduler.interp(
             get_val, (self._overlay, 'colour'), *args, **kw
         )
+        self.fading = True
 
     def cancel_fade (self):
         """Cancel any currently running fade and remove the overlay."""
         if self._fade_id is not None:
             self.scheduler.rm_timeout(self._fade_id)
             self._fade_id = None
+            self.fading = False
             self.overlay = None
 
     def dirty (self, *rects):
-        """:meth:`Graphic.dirty() <engine.gfx.graphic.Graphic.dirty>`"""
+        """:inherit:"""
         if self._surface is None:
             # nothing to mark as dirty
             return
@@ -535,6 +537,6 @@ changed parts of the surface, or ``False`` if nothing changed.
         return dirty
 
     def render (self):
-        """:meth:`Graphic.render() <engine.gfx.graphic.Graphic.render>`"""
+        """:inherit:"""
         self.draw()
         Graphic.render(self)

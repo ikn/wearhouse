@@ -92,7 +92,7 @@ from . import evt, gfx
 
 
 class LevelEditor (World):
-    """A running level editor (:class:`World <engine.game.World>` subclass)."""
+    """A running level editor."""
 
     def init (self, objects=None, grid=1, bdy=None,
               disjoint=(('paint', 'paint'), ('', ''))):

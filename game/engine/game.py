@@ -9,6 +9,7 @@ instance for changing worlds and handling the display.
 import sys
 import os
 from random import choice, randrange
+from math import exp
 
 import pygame as pg
 from pygame.display import update as update_display
@@ -90,6 +91,7 @@ World(scheduler, evthandler)
 
         self._initialised = False
         self._extra_args = (args, kwargs)
+        self._music_evt = self.evthandler.add((conf.EVENT_ENDMUSIC,))[0]
         # {sound_id: [(sound, vol)]}, vol excluding the world's sound volume
         self._sounds = {}
         self._avg_draw_time = scheduler.frame
@@ -135,6 +137,15 @@ This receives the extra arguments passed in constructing the world through the
 
     def _select (self):
         """Called by the game when becomes the active world."""
+        ident = self.id
+        pg.event.set_grab(conf.GRAB_EVENTS[ident])
+        pg.mouse.set_visible(conf.MOUSE_VISIBLE[ident])
+        if conf.MUSIC_AUTOPLAY[ident]:
+            self.play_music()
+        else:
+            pg.mixer.music.stop()
+        pg.mixer.music.set_volume(self.scale_volume(self.music_volume))
+
         if not self._initialised:
             self.init(*self._extra_args[0], **self._extra_args[1])
             self._initialised = True
@@ -277,7 +288,7 @@ world drops the pool.
 
     @property
     def music_volume (self):
-        """The world's music volume.
+        """The world's music volume, before scaling.
 
 This is actually :data:`conf.MUSIC_VOLUME`, and changing it alters that value,
 and also changes the volume of currently playing music.
@@ -291,7 +302,7 @@ and also changes the volume of currently playing music.
         if volume > 1:
             print >> sys.stderr, 'warning: music volume greater than 1'
         if volume != conf.MUSIC_VOLUME[i]:
-            conf.MUSIC_VOLUME[self.id] = volume
+            conf.MUSIC_VOLUME[i] = volume
             conf.changed('MUSIC_VOLUME')
             pg.mixer.music.set_volume(volume)
 
@@ -316,10 +327,61 @@ and also changes the volume of currently playing sounds.
                 for snd, vol in snds:
                     # vol excludes the world's volume
                     vol *= volume
+                    vol = self.scale_volume(vol)
                     if vol > 1:
                         print >> sys.stderr, ('warning: sound volume greater '
                                               'than 1')
                     snd.set_volume(volume * vol)
+
+    def play_music (self, group=None, loop=True, cb=None):
+        """Randomly play music from a group.
+
+play_music([group], loop=True[, cb])
+
+:arg group: music group to play from, as keys in :data:`conf.MUSIC`; defaults
+            to :attr:`id`, and then `''` (the root directory of
+            :data:`conf.MUSIC_DIR`) if there is no such group.
+:arg loop: whether to play multiple tracks.  If ``True``, play random tracks
+           sequentially until the active world changes, music from a different
+           group is played, or the Pygame mixer is manually stopped.  If a
+           number, play that many randomly selected tracks (if falsy, do
+           nothing).
+:arg cb: a function to call when all the music has been played, according to
+         the value of ``loop``.  Called even if no music is played (if there is
+         none in this group, or ``loop`` is falsy).
+
+Raises ``KeyError`` if the given group does not exist.
+
+"""
+        if group is None:
+            group = self.id
+            if group not in conf.MUSIC:
+                group = ''
+        # raises KeyError
+        fns = conf.MUSIC[group]
+        if not fns or not loop:
+            # no files or don't want to play anything: do nothing
+            if cb is not None:
+                cb()
+            return
+
+        # modifying variables in closures is painful
+        loop = [loop]
+        def end_cb ():
+            if loop[0] is not True:
+                loop[0] -= 1
+            if loop[0]:
+                play_next()
+            elif cb is not None:
+                cb()
+
+        def play_next ():
+            pg.mixer.music.load(choice(fns))
+            pg.mixer.music.play()
+
+        play_next()
+        self._music_evt.rm_cbs(*self._music_evt.cbs)
+        self._music_evt.cb(end_cb)
 
     def play_snd (self, base_id, volume=1):
         """Play a sound.
@@ -362,6 +424,7 @@ play_snd(base_id, volume=1)
         playing.append((snd, volume))
         # play
         volume *= conf.SOUND_VOLUME[self.id]
+        volume = self.scale_volume(volume)
         if volume > 1:
             print >> sys.stderr, 'warning: sound volume greater than 1'
         snd.set_volume(volume)
@@ -443,6 +506,24 @@ stop_snds(*base_ids, exclude=False)
             for snd, vol in all_snds.pop(base_id, ()):
                 snd.stop()
 
+    def scale_volume (self, vol):
+        """Called to scale audio volumes before using them.
+
+The result should be between ``0`` and ``1``.  The default implementation does
+
+::
+
+    (exp(conf.VOLUME_SCALING * vol) - 1) / (exp(conf.VOLUME_SCALING) - 1)
+
+or no scaling if :data:`conf.VOLUME_SCALING` is ``0``.
+
+"""
+        scale = conf.VOLUME_SCALING
+        if scale == 0:
+            return vol
+        else:
+            return (exp(scale * vol) - 1) / (exp(scale) - 1)
+
 
 class Game (object):
     """Handles worlds.
@@ -478,15 +559,6 @@ Takes the same arguments as :meth:`create_world` and passes them to it.
         self._init_cbs()
         # set up music
         pg.mixer.music.set_endevent(conf.EVENT_ENDMUSIC)
-        self._music = []
-        d = conf.MUSIC_DIR
-        try:
-            files = os.listdir(d)
-        except OSError:
-            # no directory
-            self._music = []
-        else:
-            self._music = [d + f for f in files if os.path.isfile(d + f)]
         # start first world
         self.start_world(*args, **kwargs)
 
@@ -508,6 +580,12 @@ Takes the same arguments as :meth:`create_world` and passes them to it.
                 self.refresh_display()
 
         conf.on_change('RES_F', change_res_f, source=self)
+
+    def _change_resource_pool (self, new_pool):
+        # callback: after conf.DEFAULT_RESOURCE_POOL change
+        self.resources.drop(self._using_pool, self)
+        self.resources.use(new_pool, self)
+        self._using_pool = new_pool
 
     # world handling
 
@@ -536,8 +614,7 @@ should be passed to that base class).
         eh.add(
             (pg.QUIT, self.quit),
             (pg.ACTIVEEVENT, self._active_cb),
-            (pg.VIDEORESIZE, self._resize_cb),
-            (conf.EVENT_ENDMUSIC, self.play_music)
+            (pg.VIDEORESIZE, self._resize_cb)
         )
         eh.load_s(conf.GAME_EVENTS)
         eh['_game_quit'].cb(self.quit)
@@ -556,21 +633,13 @@ should be passed to that base class).
         self.world = world
         world.display.orig_sfc = self.screen
         world.display.dirty()
-        ident = world.id
-        # set some per-world things
-        for name, r in conf.TEXT_RENDERERS[ident].iteritems():
-            if isinstance(r, basestring):
-                r = (r,)
+        # create text renderers required by this world
+        for name, r in conf.TEXT_RENDERERS[world.id].iteritems():
             if not isinstance(r, text.TextRenderer):
+                if isinstance(r, basestring):
+                    r = (r,)
                 r = text.TextRenderer(*r)
             self.text_renderers[name] = r
-        pg.event.set_grab(conf.GRAB_EVENTS[ident])
-        pg.mouse.set_visible(conf.MOUSE_VISIBLE[ident])
-        if conf.MUSIC_AUTOPLAY[ident]:
-            self.play_music()
-        else:
-            pg.mixer.music.stop()
-        pg.mixer.music.set_volume(conf.MUSIC_VOLUME[ident])
         world._select()
 
     def start_world (self, *args, **kwargs):
@@ -640,22 +709,6 @@ If this quits the last (root) world, exit the game.
         else:
             self.quit()
         return [old_world] + self.quit_world(depth - 1)
-
-    # resources
-
-    def _change_resource_pool (self, new_pool):
-        # callback: after conf.DEFAULT_RESOURCE_POOL change
-        self.resources.drop(self._using_pool, self)
-        self.resources.use(new_pool, self)
-        self._using_pool = new_pool
-
-    def play_music (self):
-        """Play the next piece of music, chosen randomly from
-:data:`conf.MUSIC_DIR`."""
-        if self._music:
-            f = choice(self._music)
-            pg.mixer.music.load(f)
-            pg.mixer.music.play()
 
     # display
 

@@ -48,6 +48,8 @@ Some notes:
         self.inputs = set()
         # inputs prefiltered by Input.filters
         self._filtered_inputs = ('type', {inputs.UNFILTERABLE: set()})
+        # identifiers for initialised devices
+        self._init_data = set()
         # all registered modifiers
         self._mods = {}
         #: Whether to capture the mouse cursor by centring it on the window
@@ -79,7 +81,7 @@ add(*evts, **named_evts) -> unnamed
 Arguments are any number of events.  Keyword arguments define named events with
 the key as the name.  An event can be a
 :class:`BaseEvent <engine.evt.evts.BaseEvent>` instance, or a sequence of
-Pygame event IDs and functions to create an
+Pygame event IDs and functions to create a
 :class:`BaseEvent <engine.evt.evts.BaseEvent>` that listens for the given
 Pygame events and has the functions as callbacks.
 
@@ -249,6 +251,8 @@ Raises ``KeyError`` if any arguments are missing.
             if i in self.inputs:
                 # already added (might happen if events share an input)
                 continue
+            i._init()
+
             if isinstance(i, inputs.ButtonInput):
                 # add mods, sorted by device and device ID
                 for m in i.mods:
@@ -479,7 +483,7 @@ much time has passed, without sending a
     def assign_devices (self, **devices):
         """Assign device IDs to inputs by device variable.
 
-:arg devices: keyword-arguments with the argument name the variable and the
+:arg devices: keyword arguments with the argument name the variable and the
               value the new device ID for each input with this device variable.
 
 See :attr:`Input.device_var <engine.evt.inputs.Input.device_var>` and
@@ -524,14 +528,17 @@ events.
     def set_deadzones (self, *deadzones):
         """Set deadzones for all registered inputs that support it.
 
-:attr deadzones: any number of
-                 ``((device, device_id=True, attrs={}), deadzone)`` tuples to
-                 set the ``deadzone`` attribute of each matching input to
-                 ``deadzone``.  ``attrs`` is a dict of attributes the input
-                 must have.  See also
-                 :attr:`Input.device <engine.evt.inputs.Input.device>` and
-                 :attr:`Input.device_id <engine.evt.inputs.Input.device_id>`.
-                 An item may also be just ``(device, deadzone)``.
+:attr deadzones:
+    any number of ``((device, device_id=True, attrs={}), deadzone)`` tuples to
+    set the ``deadzone`` attribute of each matching input to ``deadzone``.
+    ``device_id`` may be a variable
+    (:attr:`Input.device_var <engine.evt.inputs.Input.device_var>`) or
+    non-string ID
+    (:attr:`Input.device_id <engine.evt.inputs.Input.device_id>`).  ``attrs``
+    is a dict of attributes the input must have.  See also
+    :attr:`Input.device_id <engine.evt.inputs.Input.device_id>`.
+
+    An item may also be just ``(device, deadzone)``.
 
 """
         for ident, dz in deadzones:
@@ -549,16 +556,21 @@ events.
                 # no more constraints
                 ident.append({})
             device, dev_id, attrs = ident
+            got_var = isinstance(dev_id, basestring)
 
             for i in self.inputs:
-                if (i.device == device and i.device_id is not None and
-                    (dev_id is True or i.device_id == dev_id) and
-                    all(getattr(i, attr) == val
-                        for attr, val in attrs.iteritems())):
-                    try:
-                        getattr(i, 'deadzone')
-                    except AttributeError:
-                        # doesn't have a deadzone
-                        pass
-                    else:
-                        i.deadzone = dz
+                if got_var:
+                    match_dev_id = i.device_var == dev_id
+                else:
+                    match_dev_id = (i.device_id is not None and
+                                    (dev_id is True or i.device_id == dev_id))
+                if i.device == device and match_dev_id:
+                    if all(getattr(i, attr) == val
+                           for attr, val in attrs.iteritems()):
+                        try:
+                            getattr(i, 'deadzone')
+                        except AttributeError:
+                            # doesn't have a deadzone
+                            pass
+                        else:
+                            i.deadzone = dz

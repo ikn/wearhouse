@@ -12,10 +12,6 @@ from game.level import Level as entry_world
 if __name__ == '__main__':
     engine.init()
 
-    # initialise all gamepads
-    for i in xrange(joystick.get_count()):
-        joystick.Joystick(i).init()
-
     args = []
     if len(argv) > 1:
         # got some command-line arguments

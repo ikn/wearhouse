@@ -4,7 +4,7 @@ import pygame as pg
 from pygame import Rect
 
 from .engine import conf, evt, gfx, util
-from .engine.game import World
+from .engine import game
 
 from .conf import Conf
 from . import entity
@@ -15,6 +15,69 @@ scales = cycle(conf.SCALES)
 while True:
     if next(scales) == conf.SCALE:
         break
+
+
+class World (game.World):
+    def init (self):
+        self.afps = 1
+        self.slow = 0
+        self.fade_call = lambda: None
+
+    def update (self):
+        if self.graphics.fading:
+            current = float(self.scheduler.current_fps) / self.scheduler.fps
+            self.afps = self.afps * .6 + current * .4
+            if self.afps < .8:
+                self.slow += 1
+            else:
+                self.slow = 0
+            if self.slow >= 5:
+                self.slow = 0
+                self.afps = 1
+                conf.FADE_SLOW *= .8
+                if conf.FADE_SLOW < .1:
+                    conf.ALLOW_FADES = False
+                self.fade_call()
+                print 'slow', self.afps, conf.FADE_SLOW
+
+    def _fade_thing (self, start_c, from_c, to_c, t):
+        diff, i = max((abs(x - y), i)
+                      for i, (x, y) in enumerate(zip(start_c, to_c)))
+        t *= float(abs(to_c[i] - from_c[i])) / abs(to_c[i] - start_c[i])
+        resolution = self.scheduler.fps * conf.FADE_SLOW
+        return (t, resolution)
+
+    def fade_from (self, t, colour=(0, 0, 0)):
+        self.fade_call = lambda: self.fade_from(t, colour)
+        if conf.ALLOW_FADES:
+            start_c = util.normalise_colour(colour)
+            from_c = (util.normalise_colour(self.graphics.overlay.colour)
+                    if self.graphics.fading else start_c)
+            to_c = start_c[:3] + (0,)
+            t, resolution = self._fade_thing(start_c, from_c, to_c, t)
+            self.graphics.fade_from(t, from_c, resolution)
+        else:
+            self.scheduler.add_timeout(
+                lambda: setattr(self.graphics, 'overlay', None),
+                float(t) / 2
+            )
+
+
+    def fade_to (self, t, colour=(0, 0, 0)):
+        to_c = util.normalise_colour(colour)
+        self.fade_call = lambda: self.fade_to(t, colour)
+        if conf.ALLOW_FADES:
+            start_c = to_c[:3] + (0,)
+            from_c = (util.normalise_colour(self.graphics.overlay.colour)
+                    if self.graphics.fading else start_c)
+            t, resolution = self._fade_thing(start_c, from_c, to_c, t)
+            self.graphics.fade_to(t, to_c, resolution)
+        else:
+            self.scheduler.add_timeout(
+                lambda: setattr(self.graphics, 'overlay',
+                                gfx.Colour(to_c, self.graphics.orig_size)),
+                float(t) / 2
+            )
 
 
 def mk_tilemap (ident, *rects, **kwargs):
@@ -38,6 +101,8 @@ def mk_tilemap (ident, *rects, **kwargs):
 
 class Level (World):
     def init (self, ident=0, evt='start', bg=None, wall_graphic=None):
+        World.init(self)
+
         self._display = self.display
         self.display = self.graphics = \
             gfx.GraphicsManager(self.scheduler, conf.RES_SINGLE)
@@ -97,12 +162,14 @@ class Level (World):
 
         # fade in
         if evt == 'start':
-            self.graphics.fade_from(*conf.START_FADE_IN)
+            self.fade_from(*conf.START_FADE_IN)
         elif evt == 'died':
-            self.graphics.fade_from(*conf.DIE_FADE_IN)
+            self.fade_from(*conf.DIE_FADE_IN)
 
     def set_scaling (self, scale):
         conf.SCALE = scale
+        conf.ALLOW_FADES = True
+        conf.FADE_SLOW = 1
 
         if scale != 'none':
             conf.RES_W = conf.RES_DOUBLE
@@ -151,7 +218,7 @@ class Level (World):
         # don't allow restart while winning
         if self._won:
             return
-        self.graphics.fade_to(*conf.DIE_FADE_OUT)
+        self.fade_to(*conf.DIE_FADE_OUT)
         self.scheduler.add_timeout(lambda: self.reset(True), conf.DIE_TIME)
 
     def progress (self):
@@ -165,7 +232,7 @@ class Level (World):
             conf.GAME.switch_world(Level, i, bg=self._bg)
 
     def _real_win (self):
-        self.graphics.fade_to(*conf.WIN_FADE_OUT)
+        self.fade_to(*conf.WIN_FADE_OUT)
         self.scheduler.add_timeout(self.progress, conf.WIN_TIME)
 
     def win (self):
@@ -177,6 +244,8 @@ class Level (World):
 
 class Paused (World):
     def init (self, sfc, secret):
+        World.init(self)
+
         eh = self.evthandler
         eh.load('paused')
         eh['continue'].cb(lambda: conf.GAME.quit_world(1))
@@ -192,8 +261,10 @@ class Paused (World):
 
 class End (World):
     def init (self):
+        World.init(self)
+
         self.graphics.add(gfx.Graphic('end.png'))[0].align()
-        self.graphics.fade_from(*conf.END_FADE_IN)
+        self.fade_from(*conf.END_FADE_IN)
         # allow input after a delay to avoid clicking through
         self.scheduler.add_timeout(self._init_input, conf.END_INPUT_DELAY)
 
@@ -202,6 +273,6 @@ class End (World):
         self.evthandler['continue'].cb(self.restart)
 
     def restart (self):
-        self.graphics.fade_to(*conf.END_FADE_OUT)
+        self.fade_to(*conf.END_FADE_OUT)
         self.scheduler.add_timeout(lambda: conf.GAME.switch_world(Level),
                                    conf.END_CONTINUE_TIME)

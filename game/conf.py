@@ -37,6 +37,8 @@ class Conf (object):
     SEEK_TIME = 150
 
     # timing/cutscenes
+    ALLOW_FADES = True
+    FADE_SLOW = 1
     START_FADE_IN = (1,)
     DIE_FADE_OUT = (1, (255, 255, 255))
     DIE_TIME = 1.5

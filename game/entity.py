@@ -277,6 +277,7 @@ class Enemy (MovingEntity):
 
     def added (self):
         MovingEntity.added(self)
+        self._last_dirn = self.dirn
         self._extra_collide_es = self.world.barriers
         self._initial_pos = self.rect.center
         self._lost = self.world.scheduler.counter(conf.SEEK_TIME)
@@ -322,6 +323,9 @@ class Enemy (MovingEntity):
         MovingEntity.update(self)
         if self.dead:
             return
+        # stop jumping if we just turned around
+        if self._last_dirn != self.dirn:
+            self.jumping = False
         # AI
         if self.world.player.outfit == 'villain':
             self._seeking = False
@@ -352,6 +356,7 @@ class Enemy (MovingEntity):
         else:
             dp, dist = self.dist(self._initial_pos)
             self._move_towards(dp)
+        self._last_dirn = self.dirn
 
 
 class Goal (NonRect):

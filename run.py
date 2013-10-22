@@ -7,10 +7,10 @@ if os.name == 'nt':
     import pygame._view
 from game import engine
 
-from game.level import Level as entry_world
-
 if __name__ == '__main__':
     engine.init()
+
+    from game.level import Level as entry_world
 
     args = []
     if len(argv) > 1:

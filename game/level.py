@@ -11,6 +11,11 @@ from . import entity
 
 conf.add(Conf)
 
+if all(x <= y for x, y in zip(
+    conf.MIN_AUTOSCALE_RES, pg.display.list_modes()[0]
+)):
+    conf.SCALE = 'scale2x'
+
 scales = cycle(conf.SCALES)
 while True:
     if next(scales) == conf.SCALE:
@@ -38,7 +43,6 @@ class World (game.World):
                 if conf.FADE_SLOW < .1:
                     conf.ALLOW_FADES = False
                 self.fade_call()
-                print 'slow', self.afps, conf.FADE_SLOW
 
     def _fade_thing (self, start_c, from_c, to_c, t):
         diff, i = max((abs(x - y), i)

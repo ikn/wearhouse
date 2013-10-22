@@ -10,6 +10,7 @@ class Conf (object):
     RES_DOUBLE = (RES_SINGLE[0] * 2, RES_SINGLE[1] * 2)
     SCALE = 'none'
     SCALES = ('none', 'scale', 'scale2x', 'smoothscale')
+    MIN_AUTOSCALE_RES = (2100, 1200)
 
     # gameplay
     PAD_DEADZONE = .2

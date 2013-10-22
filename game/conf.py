@@ -30,6 +30,7 @@ class Conf (object):
     JUMP_BOOST = dd(1, enemy=2)
     BOUNCY = ('enemy',)
     AUTOJUMP_COOLDOWN = {'player': .6, 'enemy': 1.8}
+    REMAIN_GROUNDED = dd(.05)
     # AI
     START_SEEK_NEAR = 200
     STOP_SEEK_FAR = 250

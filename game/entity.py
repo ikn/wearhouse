@@ -78,13 +78,15 @@ class MovingEntity (NonRect):
         self._can_step_snd = C(conf.STEP_SOUND_TIME[self.ident])
         self._jump_finished = C(conf.JUMP_TIME[self.ident])
         self._can_autojump = C(conf.AUTOJUMP_COOLDOWN[self.ident])
+        self._airborne = C(conf.REMAIN_GROUNDED[self.ident])
 
     def walk (self, pos):
         self._to_move = pos
 
     def jump (self, held=True):
-        if not self.jumping and self.on_ground:
+        if not self.jumping and (self.on_ground or not self._airborne):
             # start jumping
+            self._airborne.finish()
             if held and not self._can_autojump:
                 # this is an autojump, and can't autojump again yet
                 return
@@ -108,6 +110,7 @@ class MovingEntity (NonRect):
         if e.solid_to(self):
             if axis and dirn == 1:
                 self.on_ground = e.ident
+                self._airborne.reset()
             return True
 
     def move_graphics (self, dx, dy):
@@ -164,8 +167,8 @@ class MovingEntity (NonRect):
         for i in (0, 1):
             v[i] *= damp[i]
         # pos
-        self.on_ground = False
-        self.move_by(v)
+        self.on_ground = None
+        self.move_by(v) # sets on_ground
         # walk sound
         if dirn != 0 and self.on_ground:
             if self._can_step_snd:

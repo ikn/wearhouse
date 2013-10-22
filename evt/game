@@ -19,6 +19,7 @@ button reset DOWN
 axis walk
     neg kbd LEFT
     pos kbd RIGHT
+    # wasd
     neg kbd a
     pos kbd d
     pos kbd e

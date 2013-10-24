@@ -293,7 +293,7 @@ class Enemy (MovingEntity):
             return e.solid_to('deadenemy')
         if stopped:
             if axis == 0:
-                self._blocked = True
+                self._blocked = e.ident
             return True
         elif e.ident == 'barrier' and e.on:
             self.die()
@@ -315,7 +315,7 @@ class Enemy (MovingEntity):
     def _move_towards (self, dp):
         if abs(dp[0]) > conf.STOP_SEEK_NEAR:
             self.walk(1 if dp[0] > 0 else -1)
-        if self._blocked or self.jumping:
+        if (self._blocked and self._blocked != 'player') or self.jumping:
             self.jump()
 
     def update (self):
